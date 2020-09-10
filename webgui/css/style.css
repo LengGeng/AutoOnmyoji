@@ -1,0 +1,90 @@
+* {
+  margin: 0;
+  padding: 0; }
+
+ul > li {
+  list-style: none; }
+
+.main {
+  width: 800px;
+  height: 480px;
+  margin: 0 auto;
+  padding: 15px;
+  background-color: #c19f60;
+  border: 2px solid #a88646;
+  border-radius: 2px;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: space-between;
+  align-items: center; }
+
+.config {
+  width: 100%;
+  height: 230px;
+  padding: 0 15px;
+  box-sizing: border-box;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: flex-start; }
+  .config .connect {
+    width: 50%;
+    border: 1px solid #a88646;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+    align-items: center; }
+    .config .connect .choice-device, .config .connect .choice-funs {
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: flex-start;
+      align-items: center;
+      margin: 8px auto; }
+      .config .connect .choice-device button, .config .connect .choice-funs button {
+        height: 20px;
+        margin-left: 8px; }
+    .config .connect .screen-img {
+      height: 160px; }
+    .config .connect #device {
+      min-width: 80px;
+      height: 20px; }
+  .config .funs {
+    width: 50%;
+    border: 1px solid #a88646; }
+    .config .funs #args {
+      display: flex;
+      flex-flow: column nowrap;
+      justify-content: space-between;
+      align-items: flex-start; }
+      .config .funs #args > input {
+        margin: 8px 0; }
+
+.run {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  align-items: center; }
+
+.active {
+  width: 100%;
+  height: 200px;
+  border: 1px solid #a88646;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  align-items: center; }
+  .active li {
+    margin: 15px;
+    padding: 15px;
+    box-sizing: border-box;
+    width: 28%;
+    height: 65px;
+    background-color: #736530;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-around;
+    align-items: flex-start; }
+
+/*# sourceMappingURL=style.css.map */

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>设备连接</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="main">
+    <!-- 参数配置 -->
+    <div class="config">
+        <!-- 设备连接 -->
+        <div class="connect">
+            <div class="choice-device">
+                <label for="device">选择设备：</label>
+                <select id="device"></select>
+                <button id="re-device">刷新</button>
+                <button id="screen">截图</button>
+                <button id="screen-close">隐藏截图</button>
+            </div>
+            <img class="screen-img" src="" alt="截图">
+        </div>
+
+        <!-- 功能参数 -->
+        <div class="funs">
+            <div class="choice-funs">
+                <label for="funs">选择功能：</label>
+                <select id="funs"></select>
+            </div>
+            <div id="args"></div>
+        </div>
+    </div>
+
+    <!-- 执行任务 -->
+    <div class="run">
+        <button id="run">执行任务</button>
+    </div>
+
+    <!-- 活动任务 -->
+    <ul class="active">
+    </ul>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

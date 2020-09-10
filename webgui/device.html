@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>阴阳师自动化助手</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial;
+            color: #333;
+        }
+
+        section {
+            display: -webkit-flex;
+            display: flex;
+            -webkit-flex-wrap: wrap;
+            flex-wrap: wrap;
+        }
+
+        label {
+            background: #eee;
+            border: 1px solid #ddd;
+            padding: .7em 1em;
+            cursor: pointer;
+            z-index: 1;
+            margin-left: -1px;
+        }
+
+        label:first-of-type {
+            margin-left: 0;
+        }
+
+        div {
+            width: 100%;
+            margin-top: -1px;
+            padding: 1em;
+            border: 1px solid #ddd;
+            -webkit-order: 1;
+            order: 1;
+        }
+
+        input[type=radio], div {
+            display: none;
+        }
+
+        input[type=radio]:checked + label {
+            background: #fff;
+            border-bottom: 1px solid #fff;
+        }
+
+        input[type=radio]:checked + label + div {
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+<div class="app">
+    <section>
+        <input id="tab-one" type="radio" name="grp" checked="checked">
+        <label for="tab-one">Tab One</label>
+        <div>
+            Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et
+            dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet
+            clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet,
+            consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat,
+            sed
+            diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea
+            takimata sanctus est Lorem ipsum dolor sit amet.
+        </div>
+        <input id="tab-two" type="radio" name="grp">
+        <label for="tab-two">Tab Two</label>
+        <div>
+            <img src="http://sbarthel.github.io/images/img/berg.JPG" alt="mountain">
+        </div>
+        <input id="tab-three" type="radio" name="grp">
+        <label for="tab-three">Tab Three</label>
+        <div>
+            ... no fixed height for tabbed area!
+        </div>
+    </section>
+</div>
+<script src="js/app.js"></script>
+<textarea id="log"></textarea>
+<button onclick="test()">测试</button>
+</body>
+</html>
