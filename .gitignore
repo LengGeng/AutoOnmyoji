@@ -1,0 +1,15 @@
+.idea
+__pycache__
+webgui\.idea
+
+build
+dist
+
+log/*
+images/screen/*.png
+webgui/screen/
+
+
+discard.py
+test.py
+run.bat

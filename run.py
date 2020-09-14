@@ -1,8 +1,7 @@
-import os
-
 from Onmyoji import Onmyoji
 from utils.adb import Adb
 from multiprocessing import Pool
+from multiprocessing import freeze_support
 
 
 class Run:
@@ -95,15 +94,11 @@ class Run:
         print(config)
         return config
 
-    @staticmethod
-    def shutdown(t):
-        os.system("shutdown -s -t {}".format(t * 60))
-        print('将于{}秒后关机!'.format(t * 60))
-
 
 def main():
     Run()
 
 
 if __name__ == '__main__':
+    freeze_support()
     main()
