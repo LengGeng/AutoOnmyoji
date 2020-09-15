@@ -8,8 +8,6 @@ class Run:
     def __init__(self):
         self.device_list = self.connect_device()
         self.config = self.get_config()
-        # if input('是否开启定时关机?(1 开启/其他 不开启)') == '1':
-        #     self.shutdown(int(input('请输入等待时间:(分钟)')))
         p = Pool(len(self.config))
         for data in self.config:
             p.apply_async(self.run, args=(data,))
@@ -25,7 +23,11 @@ class Run:
             onmyoji = Onmyoji()
             onmyoji.adb.set_device(config['device'])
             onmyoji.__init_logger__()
-            eval('onmyoji.' + config['action'])(*config['args'])
+            if hasattr(onmyoji, config['action']):
+                function = getattr(onmyoji, config['action'])
+                function(*config['args'])
+            else:
+                exit("无效的功能函数")
         except Exception as e:
             print(e)
 

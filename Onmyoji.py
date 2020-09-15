@@ -50,25 +50,27 @@ class Onmyoji:
         pass
 
     # 匹配图像
-    def match(self, template):
+    def match(self, template, module=None):
         """
         当前设备图片识别
         :param template: 识别图片对象或路径
+        :param module: 当template为路径时,可以指定的模块路径
         :return: 匹配结果 boolean
         """
         if type(template) == str:
-            template = self.get_img(template)
+            template = self.get_img(self.get_module_path(template, module))
         return match(self.adb.screen, template)
 
     # 匹配图像坐标
-    def match_touch(self, template):
+    def match_touch(self, template, module=None):
         """
         匹配并点击图像在设备截图中的随机点
-        :param template:
+        :param template: 识别图片对象或路径
+        :param module: 当template为路径时,可以指定的模块路径
         :return:
         """
         if type(template) == str:
-            template = self.get_img(template)
+            template = self.get_img(self.get_module_path(template, module))
         pos_list = get_match_pos(self.adb.screen, template, self.threshold)
         if pos_list:
             pos = fun.get_random_pos(*pos_list[0])
@@ -97,11 +99,11 @@ class Onmyoji:
         self.adb.screenshot()
         # 进入业原火界面
         for i in range(5):
-            if self.match_touch(self.get_module_path("探索.png", "主页")):
+            if self.match_touch("探索.png", "主页"):
                 self.logger.info("进入探索页面")
                 fun.random_time(4, 5)
                 self.adb.screenshot()
-                if self.match_touch(self.get_module_path("御魂.png", "公共")):
+                if self.match_touch("御魂.png", "公共"):
                     self.logger.info("进入御魂页面")
                     fun.random_time(1.5, 3)
                     pos = get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
@@ -115,7 +117,7 @@ class Onmyoji:
         for category in option:
             count = options[category]
             if count:
-                if self.match_touch(self.get_module_path("%s.png" % category)):
+                if self.match_touch("%s.png" % category):
                     self.logger.info("切换至" + category)
                 i = 0
                 while i < count:
@@ -138,15 +140,15 @@ class Onmyoji:
         while i < int(count):
             self.adb.screenshot()
             if self.__locking__():
-                if self.match(self.get_module_path("组队开始标志.png")):
-                    if self.match_touch(self.get_module_path("挑战.png")):
-                        self.logger.info("开始战斗!")
+                if self.match("组队开始标志.png"):
+                    if self.match_touch("挑战.png"):
+                        self.logger.info("开始战斗")
                         self.__ready__(timeout=8)  # 准备
                         if self.__end__(invite=True):
                             i += 1
                             self.logger.info("当前已进行{}次".format(i))
                     else:
-                        self.logger.warning("未匹配到开始战斗按钮!")
+                        self.logger.warning("未匹配到开始战斗按钮")
                 else:
                     self.logger.warning("暂未匹配到队友,等待...")
                 continue
@@ -154,10 +156,11 @@ class Onmyoji:
                 self.logger.warning("未检查到组队界面")
 
     # 乘客
-    def chengke(self, count):
+    def chengke(self, count: int, accept: bool = True):
         """
         组队乘客功能
         :param count: 挑战次数
+        :param accept: 接受默认邀请
         :return:
         """
         self.logger.info("任务：组队乘客")
@@ -165,6 +168,9 @@ class Onmyoji:
         i = 0
         while i < int(count):
             self.adb.screenshot()
+            if accept:
+                if self.__accept_invite__(timeout=8):
+                    accept = False
             self.__ready__(timeout=5)
             if self.__end__():
                 i += 1
@@ -184,9 +190,9 @@ class Onmyoji:
         while True:
             self.adb.screenshot()
             # 检查是否在结界界面
-            if not (self.match(self.get_module_path("突破标志.png")) or self.match(self.get_module_path("突破标志.png"))):
+            if not (self.match("突破标志.png") or self.match("突破标志.png")):
                 self.logger.warning("当前不在结界界面")
-                if self.match_touch(self.get_module_path("结界突破.png", "公共")):
+                if self.match_touch("结界突破.png", "公共"):
                     self.logger.info("已自动进入结界突破界面")
                     self.adb.screenshot()
                 else:
@@ -196,19 +202,19 @@ class Onmyoji:
             screen = self.adb.screen
             self.adb.threshold = 0.98
             # 判断当前次数
-            if self.match(self.get_img(self.get_module_path("寮次数.png"))):
-                self.logger.warning("突破次数不足!")
+            if self.match("寮次数.png"):
+                self.logger.warning("突破次数不足")
                 fun.random_time(1500, 2000)
             self.adb.threshold = 0.9
             self.logger.info("获取结界目标")
-            pos_list = get_match_pos(self.adb.screen, self.get_img(self.get_module_path("突破对象标志.png")), 0.92)
+            pos_list = get_match_pos(self.adb.screen, self.get_img("突破对象标志.png"), 0.92)
             if pos_list:
                 self.logger.info("获取到{}个结界目标".format(len(pos_list)))
                 # 开始遍历结界目标
                 for pos in pos_list:
                     self.adb.screenshot()
-                    if not self.match_touch(self.get_module_path("宝箱.png", "公共")):
-                        self.match_touch(self.get_module_path("宝箱2.png", "公共"))
+                    if not self.match_touch("宝箱.png", "公共"):
+                        self.match_touch("宝箱2.png", "公共")
                     pos_begin = (pos[1][0] - jiejie_object_width, pos[1][1] - jiejie_object_height)
                     pos_end = pos[1]
                     self.logger.info("开始节点：{}结束节点：{}".format(pos_begin, pos_end))
@@ -225,7 +231,7 @@ class Onmyoji:
                             self.adb.touch_event(*fun.get_random_pos(*pos))  # ####
                             fun.random_time(1.2, 1.8)
                             self.adb.screenshot()
-                            if self.match_touch(self.get_module_path("进攻.png")):
+                            if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
                                 self.adb.screenshot()
                                 if self.__box_end__():
@@ -250,12 +256,12 @@ class Onmyoji:
         self.module = "万事屋/"
         # 进入万事屋
         self.adb.screenshot()
-        self.logger.info("尝试进入万事屋!")
-        self.match_touch(self.get_module_path("进入万事屋.png"))
+        self.logger.info("尝试进入万事屋")
+        self.match_touch("进入万事屋.png")
         fun.random_time(3, 5)
         self.adb.screenshot()
-        self.logger.info("尝试进入事件!")
-        self.match_touch(self.get_module_path("进入事件.png"))
+        self.logger.info("尝试进入事件")
+        self.match_touch("进入事件.png")
         fun.random_time(2, 3.5)
         # 自动领取奖励主循环
         while True:
@@ -263,23 +269,23 @@ class Onmyoji:
             # 异常检查
             self.__check__()
             # 检测突发状况Buff
-            if self.match(self.get_module_path("事件_突发状况.png")):
+            if self.match("事件_突发状况.png"):
                 self.logger.info("检测到突发状况Buff")
-                self.match_touch(self.get_module_path(fun.choice(["事件_一键领取.png"])))
+                self.match_touch(fun.choice(["事件_一键领取.png"]))
             # 检测未关闭的奖励页面
-            if self.match(self.get_module_path("事件_奖励.png")):
-                self.match_touch(self.get_module_path(fun.choice(["事件_一键领取.png"])))
+            if self.match("事件_奖励.png"):
+                self.match_touch(fun.choice(["事件_一键领取.png"]))
             # 领取循环
             fun.random_time(3, 5)
             self.adb.screenshot()
-            if self.match_touch(self.get_module_path("事件_一键领取.png")):
+            if self.match_touch("事件_一键领取.png"):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
                     fun.random_time(2, 5)
                     self.adb.screenshot()
-                    if self.match(self.get_module_path("事件_奖励.png")):
-                        self.match_touch(self.get_module_path(fun.choice(["事件_一键领取.png"])))
+                    if self.match("事件_奖励.png"):
+                        self.match_touch(fun.choice(["事件_一键领取.png"]))
                         self.logger.info("成功领取奖励")
                         # 检测无法自动领取的奖励
                         # pass
@@ -305,7 +311,7 @@ class Onmyoji:
         self.logger.info("任务: 超鬼王")
         while count < 100:
             self.adb.screenshot()  # 截图
-            self.match_touch(self.get_module_path("觉醒.png", "公共"))  # 匹配点击图片
+            self.match_touch("觉醒.png", "公共")  # 匹配点击图片
             fun.random_time(1, 1.8)  # 随机等待
             self.adb.screenshot()  # 截图
             self.match_touch(fun.choice(kyLin))  # 选择列表中随机一个进行点击
@@ -317,16 +323,16 @@ class Onmyoji:
                 while True:
                     fun.random_time(0.8, 1.3)  # 随机等待
                     self.adb.screenshot()  # 截图
-                    if self.match_touch(self.get_module_path("发现超鬼王.png")):
-                        self.match_touch(self.get_module_path("发现超鬼王.png"))
+                    if self.match_touch("发现超鬼王.png"):
+                        self.match_touch("发现超鬼王.png")
                         self.logger.info("发现超鬼王")
                         break  # 跳出觉醒循环
-                    if self.match_touch(self.get_module_path("挑战.png", "觉醒")):
-                        self.logger.info("开始挑战!")
+                    if self.match_touch("挑战.png", "觉醒"):
+                        self.logger.info("开始挑战")
                         # 等待挑战结束
                         if self.__end__():
                             rouse_count += 1
-                            self.logger.info("当前已进行%s次觉醒!" % rouse_count)
+                            self.logger.info("当前已进行%s次觉醒" % rouse_count)
 
                 # 进入超鬼王阶段
                 self.logger.info("进入超鬼王阶段")
@@ -336,17 +342,17 @@ class Onmyoji:
                     while True:
                         fun.random_time(0.8, 1.3)  # 随机等待
                         self.adb.screenshot()  # 截图
-                        if not self.match_touch(self.get_module_path("挑战.png")):
+                        if not self.match_touch("挑战.png"):
                             break
-                        self.logger.info("开始挑战超鬼王!")
+                        self.logger.info("开始挑战超鬼王")
                         # 准备
                         self.__ready__()
                         # 等待结束
                         if self.__end__():
                             count += 1
-                    if self.match_touch(self.get_module_path("返回.png", "公共")):
-                        self.logger.info("击败超鬼王!跳出超鬼王阶段")
-                        self.logger.info("当前已击败%s只鬼王!" % count)
+                    if self.match_touch("返回.png", "公共"):
+                        self.logger.info("击败超鬼王,跳出超鬼王阶段")
+                        self.logger.info("当前已击败%s只鬼王" % count)
                         break
 
     # 初始化Logger
@@ -369,17 +375,15 @@ class Onmyoji:
             end_sign = None  # 结算成功标志
             self.adb.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.match(
-                    self.get_module_path("宝箱2.png", "公共")) or self.match(
-                self.get_module_path("宝箱.png", "公共")) or self.match(
-                self.get_module_path("战斗胜利.png", "公共")) or self.match(
-                self.get_module_path("战斗失败.png", "公共")
-            ):
+            while self.match("宝箱2.png", "公共") or self.match("宝箱.png", "公共") or self.match(
+                    "战斗胜利.png", "公共") or self.match("战斗失败.png", "公共"):
                 self.logger.info("检测到结算页面")
                 end_sign = True
+                # 默认邀请队友
                 if invite:
-                    self.__invite__()
-                if self.match(self.get_module_path("战斗失败.png", "公共")):
+                    if self.__invite__():
+                        break
+                if self.match("战斗失败.png", "公共"):
                     self.logger.info("检测到战斗失败")
                     end_sign = False
                 end_regions = [
@@ -392,7 +396,7 @@ class Onmyoji:
                 self.adb.screenshot()  # 截图
             fun.random_time(0.5, 0.8)  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
-                self.logger.info("结算成功!")
+                self.logger.info("结算成功")
                 return end_sign
 
     # 结束
@@ -406,12 +410,13 @@ class Onmyoji:
             end_sign = None  # 结算成功标志
             self.adb.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.match(self.get_module_path("结束标志.png", "公共")) or self.match(
-                    self.get_module_path("战斗胜利.png", "公共")) or self.match(self.get_module_path("战斗失败.png", "公共")):
+            while self.match("结束标志.png", "公共") or self.match("战斗胜利.png", "公共") or self.match("战斗失败.png", "公共"):
                 end_sign = True
+                # 默认邀请队友
                 if invite:
-                    self.__invite__()
-                if self.match(self.get_module_path("战斗失败.png", "公共")):
+                    if self.__invite__():
+                        break
+                if self.match("战斗失败.png", "公共"):
                     end_sign = False
                 end_regions = [
                     [[0.625, 0.9], [0.8, 0.98]],
@@ -423,7 +428,7 @@ class Onmyoji:
                 self.adb.screenshot()  # 截图
             fun.random_time(0.8, 1)  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
-                self.logger.info("结算成功!")
+                self.logger.info("结算成功")
                 return end_sign
 
     # 准备
@@ -438,21 +443,41 @@ class Onmyoji:
             ready_sign = False
             while True:
                 self.adb.screenshot()  # 截图
-                while self.match(self.get_module_path("准备.png", "公共")):
+                while self.match("准备.png", "公共"):
                     self.adb.screenshot()  # 截图
-                    self.match_touch(self.get_module_path("准备.png", "公共"))
+                    self.match_touch("准备.png", "公共")
                     ready_sign = True
                 if ready_sign:
-                    self.logger.info("准备!")
+                    self.logger.info("准备")
                     return True
         except TimeoutException:
-            self.logger.warning("准备超时退出!")
+            self.logger.warning("准备超时退出")
 
     # 开启默认邀请
     def __invite__(self):
-        if self.match_touch(self.get_module_path("默认邀请.png", "组队")):
-            self.logger.info("开启默认邀请!")
-            self.match_touch(self.get_module_path("确定.png", "公共"))
+        """
+        开启默认邀请
+        :return: 是否开启默认邀请成功
+        """
+        if self.match_touch("默认邀请.png", "组队"):
+            fun.random_time(0.2, 0.5)
+            if self.match_touch("确定.png", "公共"):
+                self.logger.info("开启默认邀请")
+                return True
+            else:
+                self.logger.warning("默认邀请失败")
+                return False
+
+    # 开启接受默认邀请
+    @threading_timeoutable()
+    def __accept_invite__(self):
+        try:
+            while True:
+                if self.match_touch("同意默认邀请.png", "组队"):
+                    self.logger.info("同意接受默认邀请")
+                    return True
+        except TimeoutException:
+            self.logger.warning("没有收到队友的默认邀请")
 
     # 正常挑战
     def __combat__(self):
@@ -461,11 +486,11 @@ class Onmyoji:
         :return:
         """
         self.adb.screenshot()
-        if self.match_touch(self.get_module_path("挑战_业原火.png", "业原火")):
-            self.logger.info("开始挑战!")
+        if self.match_touch("挑战_业原火.png", "业原火"):
+            self.logger.info("开始挑战")
             self.__ready__(timeout=8)
             if self.__end__():
-                self.logger.info("结束挑战!")
+                self.logger.info("结束挑战")
                 return True
         return False
 
@@ -496,10 +521,10 @@ class Onmyoji:
         确认阵容锁定状态
         :return: bool
         """
-        if self.match(self.get_module_path("锁.png", "公共")):
+        if self.match("锁.png", "公共"):
             self.logger.info("当前阵容已处于锁定状态")
             return True
-        elif self.match_touch(self.get_module_path("锁_开.png", "公共")):
+        elif self.match_touch("锁_开.png", "公共"):
             self.logger.info("当前阵容未锁定,已为您自动锁定")
             return True
         else:
@@ -516,8 +541,9 @@ def _test():
     onmyoji.adb.connect_device()
     onmyoji.__init_logger__()
     # onmyoji.zudui(1234)
+    onmyoji.chengke(1234)
     # onmyoji.yeyuanhuo(12, 34, 56)
-    onmyoji.jiejie()
+    # onmyoji.jiejie()
 
 
 if __name__ == '__main__':

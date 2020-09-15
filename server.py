@@ -39,16 +39,16 @@ ACTIVITY = {}
 def yysRun(option):
     print("开始执行任务")
     print(option)
-    device = option['device'][0]
-    fun = 'onmyoji.' + option['fun'][0]
-    args = option['args[]'] if 'args[]' in option else []
     onmyoji = Onmyoji()
+    device = option['device'][0]
     onmyoji.adb.set_device(device)
     onmyoji.__init_logger__()
-    if args:
-        eval(fun)(*args)
+    args = option['args[]'] if 'args[]' in option else []
+    if hasattr(onmyoji, option['fun'][0]):
+        function = getattr(onmyoji, option['fun'][0])
+        function(*args)
     else:
-        eval(fun)()
+        exit("无效的功能函数")
 
 
 def get_device():
