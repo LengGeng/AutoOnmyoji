@@ -5,7 +5,7 @@
 ul > li {
   list-style: none; }
 
-.main {
+#app {
   width: 800px;
   height: 480px;
   margin: 0 auto;

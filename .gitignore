@@ -1,15 +1,16 @@
+# IDE目录
 .idea
 __pycache__
 webgui\.idea
-
+# PyInstaller
 build
 dist
-
+*.spec
+# 日志&截图
 log/*
 images/screen/*.png
 webgui/screen/
-
-
+# 测试
 discard.py
 test.py
 run.bat

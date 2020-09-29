@@ -61,6 +61,14 @@ class Onmyoji:
             template = self.get_img(self.get_module_path(template, module))
         return match(self.adb.screen, template)
 
+    def matchs(self, *args):
+        """同时匹配多个图片
+        self.match的加强版,同时匹配多个普片
+        :param args: match函数的参数集合的列表 [(arg1,arg2...),...]
+        :return: 多个匹配中是否有匹配到
+        """
+        return any(self.match(*arg) for arg in args)
+
     # 匹配图像坐标
     def match_touch(self, template, module=None):
         """
@@ -108,7 +116,7 @@ class Onmyoji:
                     fun.random_time(1.5, 3)
                     pos = get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
-                    self.adb.touch_event(*pos)
+                    self.adb.click(pos)
                     self.logger.info("进入业原火页面")
                     break
         # 检查是否锁定阵容
@@ -228,7 +236,7 @@ class Onmyoji:
                             self.logger.info("目标状态：击破")
                         else:
                             self.logger.info("目标状态：未突破")
-                            self.adb.touch_event(*fun.get_random_pos(*pos))  # ####
+                            self.adb.click(fun.get_random_pos(*pos))  # ####
                             fun.random_time(1.2, 1.8)
                             self.adb.screenshot()
                             if self.match_touch("进攻.png"):
@@ -375,8 +383,12 @@ class Onmyoji:
             end_sign = None  # 结算成功标志
             self.adb.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.match("宝箱2.png", "公共") or self.match("宝箱.png", "公共") or self.match(
-                    "战斗胜利.png", "公共") or self.match("战斗失败.png", "公共"):
+            while self.matchs(
+                    ("贪吃鬼.png", "公共"),
+                    ("宝箱2.png", "公共"),
+                    ("宝箱.png", "公共"),
+                    ("战斗胜利.png", "公共"),
+                    ("战斗失败.png", "公共")):
                 self.logger.info("检测到结算页面")
                 end_sign = True
                 # 默认邀请队友
@@ -391,8 +403,9 @@ class Onmyoji:
                     [[0.93, 0.33], [0.98, 0.66]],
                 ]
                 pos = fun.get_random_pos(*get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
-                self.adb.touch_event(*pos)
-                fun.random_time(1.2, 1.8)  # 随机等待
+                self.logger.info(f"点击屏幕:{pos}")
+                self.adb.click(pos)
+                fun.random_time(2, 2.5)  # 随机等待
                 self.adb.screenshot()  # 截图
             fun.random_time(0.5, 0.8)  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
@@ -423,7 +436,7 @@ class Onmyoji:
                     [[0.93, 0.33], [0.98, 0.66]],
                 ]
                 pos = fun.get_random_pos(*get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
-                self.adb.touch_event(*pos)
+                self.adb.click(pos)
                 fun.random_time(0.5, 0.8)  # 随机等待
                 self.adb.screenshot()  # 截图
             fun.random_time(0.8, 1)  # 随机等待
@@ -486,10 +499,10 @@ class Onmyoji:
         :return:
         """
         self.adb.screenshot()
-        if self.match_touch("挑战_业原火.png", "业原火"):
+        if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
             self.logger.info("开始挑战")
             self.__ready__(timeout=8)
-            if self.__end__():
+            if self.__box_end__():
                 self.logger.info("结束挑战")
                 return True
         return False
@@ -533,7 +546,11 @@ class Onmyoji:
 
     # 测试
     def test(self):
-        pass
+        self.logger.info("测试函数开始执行")
+        for _ in range(10):
+            self.logger.info("测试函数执行")
+            fun.random_time(1, 2)
+        self.logger.info("测试函数执行结束")
 
 
 def _test():
@@ -541,7 +558,7 @@ def _test():
     onmyoji.adb.connect_device()
     onmyoji.__init_logger__()
     # onmyoji.zudui(1234)
-    onmyoji.chengke(1234)
+    onmyoji.combat(500)
     # onmyoji.yeyuanhuo(12, 34, 56)
     # onmyoji.jiejie()
 

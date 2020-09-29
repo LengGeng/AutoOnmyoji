@@ -3,14 +3,23 @@ from utils.adb import Adb
 from multiprocessing import Pool
 from multiprocessing import freeze_support
 
+FUN_LIST = [
+    ['挑战', 'combat', ['请输入挑战次数']],
+    ['业原火', 'yeyuanhuo', ['请输入贪的数量', '请输入嗔的数量', '请输入痴的数量']],
+    ['组队司机', 'zudui', ['请输入开车次数']],
+    ['组队乘客', 'chengke', ['请输入上车次数']],
+    ['结界突破', 'jiejie', []],
+    # ['活动', 'huodong', ['请输入次数']]
+]
+
 
 class Run:
     def __init__(self):
         self.device_list = self.connect_device()
-        self.config = self.get_config()
-        p = Pool(len(self.config))
-        for data in self.config:
-            p.apply_async(self.run, args=(data,))
+        self.configs = self.get_config()
+        p = Pool(len(self.configs))
+        for config in self.configs:
+            p.apply_async(self.run, args=(config,))
         print('正在等待所有子进程完成')
         p.close()
         p.join()
@@ -72,28 +81,20 @@ class Run:
 
     def get_config(self):
         config = []
-        fun_list = [
-            ['业原火', 'yeyuanhuo', ['请输入贪的数量', '请输入嗔的数量', '请输入痴的数量']],
-            ['组队司机', 'zudui', ['请输入开车次数']],
-            ['组队乘客', 'chengke', ['请输入上车次数']],
-            ['结界突破', 'jiejie', ['请输入上车次数']],
-            ['活动', 'huodong', ['请输入次数']]
-        ]
         print("功能列表")
         print('{:<5}{:<15}{:<}'.format('序号', '功能', '对应函数'))
-        for i, function in enumerate(fun_list):
+        for i, function in enumerate(FUN_LIST):
             print('{:<7}{:<15}{:<}'.format(i, function[0], function[1]))
         for device in self.device_list:
             while True:
                 action = input('请输入序号为设备 {} 配置功能'.format(device))
-                function = fun_list[int(action)][1]
-                print('您选择的是 {} 功能'.format(fun_list[int(action)][0]))
+                function = FUN_LIST[int(action)][1]
+                print('您选择的是 {} 功能'.format(FUN_LIST[int(action)][0]))
                 args = []
-                for s in fun_list[int(action)][2]:
+                for s in FUN_LIST[int(action)][2]:
                     args.append(int(input(s)))
                 config.append({'device': device, 'action': function, 'args': args})
                 break
-        print(config)
         return config
 
 

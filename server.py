@@ -6,9 +6,9 @@
 # 开发工具  :   PyCharm
 import ssl
 import json
-from os import path
+import os.path
 from Onmyoji import Onmyoji
-from urllib import parse
+import urllib.parse
 from utils.adb import Adb
 from multiprocessing import Process
 from webbrowser import open as webopen
@@ -16,7 +16,7 @@ from multiprocessing import freeze_support
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 GUI_DIR = 'webgui'
-ROOT_DIR = path.join(path.dirname(path.realpath(__file__)), GUI_DIR)
+ROOT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), GUI_DIR)
 print('ROOT_DIR[%s]' % ROOT_DIR)
 
 PORT = 8080
@@ -36,32 +36,52 @@ CONTENT_TYPE = {
 ACTIVITY = {}
 
 
-def yysRun(option):
-    print("开始执行任务")
-    print(option)
+def get_request_params(text: str, content_type: str = None):
+    if content_type is not None:
+        if content_type.startswith("application/json"):
+            return json.loads(text)
+        elif content_type.startswith("application/x-www-form-urlencoded"):
+            return urllib.parse.parse_qs(text)
+    return urllib.parse.parse_qs(text)
+
+
+def Run(device, fun, args):
     onmyoji = Onmyoji()
-    device = option['device'][0]
     onmyoji.adb.set_device(device)
     onmyoji.__init_logger__()
-    args = option['args[]'] if 'args[]' in option else []
-    if hasattr(onmyoji, option['fun'][0]):
-        function = getattr(onmyoji, option['fun'][0])
+    if hasattr(onmyoji, fun):
+        function = getattr(onmyoji, fun)
         function(*args)
     else:
         exit("无效的功能函数")
 
 
+def OnmyojiRun(option):
+    device = option['device']
+    fun = option['fun']
+    args = option['args']
+    if device in ACTIVITY:
+        return {"code": 1001, "msg": "该设备已有执行的任务!"}
+    else:
+        p = Process(target=Run, args=(device, fun, args,))
+        ACTIVITY[device] = [fun, p]
+        p.start()
+    print("开始执行任务")
+    print(option)
+
+
 def get_device():
     devices_list = Adb.get_devices_list()
-    return {'devices': devices_list}
+    return devices_list
 
 
-def screen(device):
+def screen(option):
+    device = option['device']
     adb = Adb()
     adb.set_device(device)
     adb.image_path = "./{}/screen".format(GUI_DIR)
     adb.screenshot()
-    filename = path.join('screen', 'screen_' + device + '.png')
+    filename = os.path.join('screen', 'screen_' + device + '.png')
     return filename
 
 
@@ -74,7 +94,15 @@ def get_active():
     return active
 
 
-class MyHTTPRequestHandler(BaseHTTPRequestHandler):
+ROUTER = {
+    "/run": OnmyojiRun,  # 执行任务
+    "/device": get_device,  # 返回设备
+    "/screen": screen,  # 截图
+    "/active": get_active,  # 活动任务
+}
+
+
+class OnmyojiHTTPRequestHandler(BaseHTTPRequestHandler):
     Origin = 'https://yys.usaz.cn'
 
     def __init__(self, *args, **kwargs):
@@ -84,25 +112,25 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
         # noinspection PyBroadException
         try:
             # url解码
-            url = parse.urlparse(parse.unquote(self.path))
+            url = urllib.parse.urlparse(urllib.parse.unquote(self.path))
             # 获取url路径
-            file_path = url.path
+            url_path = url.path
             # url里的参数
-            RequestArgs = parse.parse_qs(url.query)
+            RequestArgs = get_request_params(url.query)
             # print('RequestType: GET')
             # print('URL: ', url)
-            # print('URL_PATH: ', file_path)
+            # print('URL_PATH: ', url_path)
             # print('RequestArgs: ', RequestArgs)
             # 补充默认文件路径
-            if file_path.endswith('/'):
-                file_path += 'index.html'
+            if url_path.endswith('/'):
+                url_path += 'index.html'
             # 获取文件名及后缀名
-            filename, fileExt = path.splitext(file_path)
+            filename, fileExt = os.path.splitext(url_path)
 
             if fileExt in CONTENT_TYPE:
                 ContentType = CONTENT_TYPE[fileExt]
                 try:
-                    with open(ROOT_DIR + file_path, 'rb') as f:
+                    with open(ROOT_DIR + url_path, 'rb') as f:
                         content = f.read()
                         self._sendHttpBody(content, ContentType)
                 except IOError:
@@ -115,41 +143,36 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
         # noinspection PyBroadException
         try:
             # url解码
-            url = parse.urlparse(parse.unquote(self.path))
+            url = urllib.parse.urlparse(urllib.parse.unquote(self.path))
             # 获取url路径
-            file_path = url.path
+            url_path = url.path
             # url里的参数
-            RequestArgs = parse.parse_qs(self.rfile.read(int(self.headers['content-length'])).decode())  # 重点在此步!
-            # print('RequestType: POST')
-            # print('URL: ', url)
-            # print('URL_PATH: ', file_path)
-            # print('RequestArgs: ', RequestArgs)
-            # 执行任务
-            if file_path == '/run':
-                device = RequestArgs['device'][0]
-                fun = 'yys.' + RequestArgs['fun'][0]
-                if device in ACTIVITY:
-                    self._sendHttpBody({"code": 1001, "msg": "该设备已有执行的任务!"})
+            request_text = self.rfile.read(int(self.headers['content-length'])).decode()  # 重点在此步!
+            content_type = self.headers['content-type']
+            RequestArgs = get_request_params(request_text, content_type)
+            print(f'RequestType: POST\nURL: {url}\nURL_PATH: {url_path}\nRequestArgs: {RequestArgs}')
+
+            response = {"code": 0}
+            if url_path in ROUTER:
+                function = ROUTER[url_path]
+                if RequestArgs:
+                    data = function(RequestArgs)
                 else:
-                    p = Process(target=yysRun, args=(RequestArgs,))
-                    ACTIVITY[device] = [fun, p]
-                    self._sendHttpBody({"code": 0})
-                    p.start()
-            # 返回设备
-            if file_path == '/device':
-                devices = get_device()
-                self._sendHttpBody({"code": 0, "data": devices})
-            # 截图
-            if file_path == '/screen':
-                screen_img = screen(RequestArgs['device'][0])
-                self._sendHttpBody({"code": 0, "data": {'screen': screen_img}})
-            # 活动任务
-            if file_path == '/active':
-                active = get_active()
-                self._sendHttpBody({"code": 0, "data": active})
+                    data = function()
+                print(data)
+                if type(data) == dict:
+                    response.update(data)
+                else:
+                    response["data"] = data
+                print(response)
+                self._sendHttpBody(response)
+            else:
+                print("无效的请求")
+                # self.send_error(404)
+                self._sendHttpBody({"code": 404})
         except Exception as e:
             print("服务器未知错误: ", e)
-            self._sendHttpBody({"code": -1, "msg": "服务器未知错误!"})
+            self._sendHttpBody({"code": 500, "msg": "服务器未知错误!"})
 
     def _sendHttpHeader(self, contentType='application/json'):
         origin = self.headers['Origin'] or self.Origin
@@ -163,11 +186,11 @@ class MyHTTPRequestHandler(BaseHTTPRequestHandler):
     def _sendHttpBody(self, data, contentType='application/json'):
         self._sendHttpHeader(contentType)
         body = b''
-        if isinstance(data, bytes):
+        if type(data) == bytes:
             body = data
-        elif isinstance(data, str):
+        elif type(data) == str:
             body = data.encode('utf-8', errors='ignore')
-        else:
+        elif type(data) == dict:
             body = json.dumps(data).encode('utf-8', errors='ignore')
         self.wfile.write(body)
 
@@ -176,7 +199,7 @@ if __name__ == "__main__":
     freeze_support()
     try:
         server_address = ('127.0.0.1', PORT)
-        with HTTPServer(server_address, MyHTTPRequestHandler) as httpd:
+        with HTTPServer(server_address, OnmyojiHTTPRequestHandler) as httpd:
             httpd.socket = ssl.wrap_socket(httpd.socket, certfile=GUI_DIR + '/server.key', server_side=True)
             print("HTTP server is starting at port " + repr(PORT) + '...')
             print("Press ^C to quit")
