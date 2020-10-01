@@ -4,14 +4,15 @@
 # 开发时间  :   2019/9/26 16:21
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
+from utils.adb import Adb
+from utils.match import Match
+from utils import functions as fun
+from utils.logger import get_logger
+from stopit import threading_timeoutable
+from stopit.utils import TimeoutException
+
 import os
 import time
-from utils.match import *
-from utils.adb import Adb
-from utils import functions as fun
-from stopit import threading_timeoutable
-from utils.logger import get_logger
-from stopit.utils import TimeoutException
 
 
 class Onmyoji:
@@ -32,7 +33,7 @@ class Onmyoji:
         """
         if filename not in self.images:
             # self.images[filename] = cv2.imread(self.image_path + "/" + filename)
-            self.images[filename] = cv_imread(os.path.join(self.image_path, filename))
+            self.images[filename] = Match.cv_imread(os.path.join(self.image_path, filename))
         return self.images[filename]
 
     # 返回模块的文件路径
@@ -59,7 +60,7 @@ class Onmyoji:
         """
         if type(template) == str:
             template = self.get_img(self.get_module_path(template, module))
-        return match(self.adb.screen, template)
+        return Match.match(self.adb.screen, template)
 
     def matchs(self, *args):
         """同时匹配多个图片
@@ -79,7 +80,7 @@ class Onmyoji:
         """
         if type(template) == str:
             template = self.get_img(self.get_module_path(template, module))
-        pos_list = get_match_pos(self.adb.screen, template, self.threshold)
+        pos_list = Match.get_match_pos(self.adb.screen, template, self.threshold)
         if pos_list:
             pos = fun.get_random_pos(*pos_list[0])
             if pos:
@@ -114,7 +115,7 @@ class Onmyoji:
                 if self.match_touch("御魂.png", "公共"):
                     self.logger.info("进入御魂页面")
                     fun.random_time(1.5, 3)
-                    pos = get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
+                    pos = Match.get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
                     self.adb.click(pos)
                     self.logger.info("进入业原火页面")
@@ -215,7 +216,7 @@ class Onmyoji:
                 fun.random_time(1500, 2000)
             self.adb.threshold = 0.9
             self.logger.info("获取结界目标")
-            pos_list = get_match_pos(self.adb.screen, self.get_img("突破对象标志.png"), 0.92)
+            pos_list = Match.get_match_pos(self.adb.screen, self.get_img("突破对象标志.png"), 0.92)
             if pos_list:
                 self.logger.info("获取到{}个结界目标".format(len(pos_list)))
                 # 开始遍历结界目标
@@ -229,10 +230,10 @@ class Onmyoji:
                     # 判断坐标真实有效,排除显示不全的目标
                     if pos_begin[0] > 0 and pos_begin[1] > 0:
                         jiejie_img = screen[pos_begin[1]:pos_end[1], pos_begin[0]:pos_end[0]]
-                        show_img(jiejie_img, time=800)
-                        if match(jiejie_img, self.get_img(self.get_module_path("败北.png"))):
+                        Match.show_img(jiejie_img, time=800)
+                        if Match.match(jiejie_img, self.get_img(self.get_module_path("败北.png"))):
                             self.logger.info("目标状态：败北")
-                        elif match(jiejie_img, self.get_img(self.get_module_path("击破.png"))):
+                        elif Match.match(jiejie_img, self.get_img(self.get_module_path("击破.png"))):
                             self.logger.info("目标状态：击破")
                         else:
                             self.logger.info("目标状态：未突破")
@@ -242,7 +243,7 @@ class Onmyoji:
                             if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
                                 self.adb.screenshot()
-                                if self.__box_end__():
+                                if self.__end__():
                                     self.logger.info("突破成功")
                                     fun.random_time(2.5, 3)
                                     break
@@ -372,8 +373,8 @@ class Onmyoji:
         self.logger = get_logger(LOG_FILENAME)
         self.logger.info("*" * 15 + "启动" + "*" * 15)
 
-    # 宝箱结束
-    def __box_end__(self, invite=False):
+    # 结束
+    def __end__(self, invite=False):
         """
         判断并点击界面跳过结算界面(旧版本宝箱结算)
         :return: 结算结果
@@ -384,11 +385,13 @@ class Onmyoji:
             self.adb.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while self.matchs(
-                    ("贪吃鬼.png", "公共"),
-                    ("宝箱2.png", "公共"),
-                    ("宝箱.png", "公共"),
                     ("战斗胜利.png", "公共"),
-                    ("战斗失败.png", "公共")):
+                    ("战斗失败.png", "公共"),
+                    ("结束标志.png", "公共"),
+                    ("贪吃鬼.png", "公共"),
+                    ("宝箱.png", "公共"),
+                    ("宝箱2.png", "公共"),
+            ):
                 self.logger.info("检测到结算页面")
                 end_sign = True
                 # 默认邀请队友
@@ -402,44 +405,12 @@ class Onmyoji:
                     [[0.625, 0.9], [0.8, 0.98]],
                     [[0.93, 0.33], [0.98, 0.66]],
                 ]
-                pos = fun.get_random_pos(*get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
+                pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
                 self.logger.info(f"点击屏幕:{pos}")
                 self.adb.click(pos)
                 fun.random_time(2, 2.5)  # 随机等待
                 self.adb.screenshot()  # 截图
             fun.random_time(0.5, 0.8)  # 随机等待
-            if end_sign is not None:  # 结算后跳出结算循环
-                self.logger.info("结算成功")
-                return end_sign
-
-    # 结束
-    def __end__(self, invite=False):
-        """
-        判断并点击界面跳过结算界面
-        :return: 结算结果
-        """
-        # 等待结束
-        while True:
-            end_sign = None  # 结算成功标志
-            self.adb.screenshot()  # 截图
-            # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.match("结束标志.png", "公共") or self.match("战斗胜利.png", "公共") or self.match("战斗失败.png", "公共"):
-                end_sign = True
-                # 默认邀请队友
-                if invite:
-                    if self.__invite__():
-                        break
-                if self.match("战斗失败.png", "公共"):
-                    end_sign = False
-                end_regions = [
-                    [[0.625, 0.9], [0.8, 0.98]],
-                    [[0.93, 0.33], [0.98, 0.66]],
-                ]
-                pos = fun.get_random_pos(*get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
-                self.adb.click(pos)
-                fun.random_time(0.5, 0.8)  # 随机等待
-                self.adb.screenshot()  # 截图
-            fun.random_time(0.8, 1)  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
                 self.logger.info("结算成功")
                 return end_sign
@@ -502,7 +473,7 @@ class Onmyoji:
         if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
             self.logger.info("开始挑战")
             self.__ready__(timeout=8)
-            if self.__box_end__():
+            if self.__end__():
                 self.logger.info("结束挑战")
                 return True
         return False

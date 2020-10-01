@@ -222,9 +222,9 @@ def _test():
     adb.screenshot()
 
     for i in range(1, 10):
-        adb.click(i * 10, i * 50)
-    adb.touch_event(i * 10, i * 50)
-    adb.slide_event(500 + i * 10, 1200, dc='u', distance=1500)
+        adb.click((i * 10, i * 50))
+        adb.touch_event(i * 10, i * 50)
+        adb.slide_event(500 + i * 10, 1200, dc='u', distance=1500)
 
 
 _adb = Adb()
