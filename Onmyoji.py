@@ -5,6 +5,7 @@
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
 from utils.adb import Adb
+from utils.mood import Mood
 from utils.match import Match
 from utils import functions as fun
 from utils.logger import get_logger
@@ -23,6 +24,7 @@ class Onmyoji:
     def __init__(self):
         self.adb = Adb()
         self.module = ""
+        self.mood = Mood()
 
     # 获取图片对象
     def get_img(self, filename):
@@ -110,11 +112,11 @@ class Onmyoji:
         for i in range(5):
             if self.match_touch("探索.png", "主页"):
                 self.logger.info("进入探索页面")
-                fun.random_time(4, 5)
+                self.mood.mood_sleep()
                 self.adb.screenshot()
                 if self.match_touch("御魂.png", "公共"):
                     self.logger.info("进入御魂页面")
-                    fun.random_time(1.5, 3)
+                    self.mood.mood_sleep()
                     pos = Match.get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
                     self.adb.click(pos)
@@ -213,7 +215,8 @@ class Onmyoji:
             # 判断当前次数
             if self.match("寮次数.png"):
                 self.logger.warning("突破次数不足")
-                fun.random_time(1500, 2000)
+                # 等待15-20分钟
+                fun.random_time(15 * 60, 20 * 60)
             self.adb.threshold = 0.9
             self.logger.info("获取结界目标")
             pos_list = Match.get_match_pos(self.adb.screen, self.get_img("突破对象标志.png"), 0.92)
@@ -238,14 +241,14 @@ class Onmyoji:
                         else:
                             self.logger.info("目标状态：未突破")
                             self.adb.click(fun.get_random_pos(*pos))  # ####
-                            fun.random_time(1.2, 1.8)
+                            self.mood.mood_sleep()
                             self.adb.screenshot()
                             if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
                                 self.adb.screenshot()
                                 if self.__end__():
                                     self.logger.info("突破成功")
-                                    fun.random_time(2.5, 3)
+                                    self.mood.mood_sleep()
                                     break
                                 else:
                                     self.logger.info("突破失败")
@@ -256,7 +259,7 @@ class Onmyoji:
                 # 遍历完后滑动列表
                 else:
                     self.adb.slide_event(1200, 875, dc="u", distance=700)
-                    fun.random_time(0.5, 1)
+                    self.mood.mood_sleep()
             else:
                 self.logger.warning("未获取到结界目标")
 
@@ -267,11 +270,11 @@ class Onmyoji:
         self.adb.screenshot()
         self.logger.info("尝试进入万事屋")
         self.match_touch("进入万事屋.png")
-        fun.random_time(3, 5)
+        self.mood.mood_sleep()
         self.adb.screenshot()
         self.logger.info("尝试进入事件")
         self.match_touch("进入事件.png")
-        fun.random_time(2, 3.5)
+        self.mood.mood_sleep()
         # 自动领取奖励主循环
         while True:
             self.adb.screenshot()
@@ -285,13 +288,13 @@ class Onmyoji:
             if self.match("事件_奖励.png"):
                 self.match_touch(fun.choice(["事件_一键领取.png"]))
             # 领取循环
-            fun.random_time(3, 5)
+            self.mood.mood_sleep()
             self.adb.screenshot()
             if self.match_touch("事件_一键领取.png"):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
-                    fun.random_time(2, 5)
+                    self.mood.mood_sleep()
                     self.adb.screenshot()
                     if self.match("事件_奖励.png"):
                         self.match_touch(fun.choice(["事件_一键领取.png"]))
@@ -303,6 +306,7 @@ class Onmyoji:
                     if time.time() - start > 15:
                         self.logger.warning("点击了一键领取奖励，但未检测到奖励页面。")
                         break
+                # 等待5-10分钟
                 fun.random_time(60 * 5, 60 * 10)
             else:
                 self.logger.error("不在程序运行所需场景，请切换至{万事屋=>事件}场景。")
@@ -321,7 +325,7 @@ class Onmyoji:
         while count < 100:
             self.adb.screenshot()  # 截图
             self.match_touch("觉醒.png", "公共")  # 匹配点击图片
-            fun.random_time(1, 1.8)  # 随机等待
+            self.mood.mood_sleep()  # 随机等待
             self.adb.screenshot()  # 截图
             self.match_touch(fun.choice(kyLin))  # 选择列表中随机一个进行点击
             if self.__locking__():
@@ -330,7 +334,7 @@ class Onmyoji:
                 # 进入循环挑战觉醒阶段
                 self.logger.info("进入循环挑战觉醒阶段")
                 while True:
-                    fun.random_time(0.8, 1.3)  # 随机等待
+                    self.mood.mood_sleep()  # 随机等待
                     self.adb.screenshot()  # 截图
                     if self.match_touch("发现超鬼王.png"):
                         self.match_touch("发现超鬼王.png")
@@ -346,10 +350,10 @@ class Onmyoji:
                 # 进入超鬼王阶段
                 self.logger.info("进入超鬼王阶段")
                 while True:
-                    fun.random_time(1.3, 1.8)  # 随机等待
+                    self.mood.mood_sleep()  # 随机等待
                     self.adb.screenshot()  # 截图
                     while True:
-                        fun.random_time(0.8, 1.3)  # 随机等待
+                        self.mood.mood_sleep()  # 随机等待
                         self.adb.screenshot()  # 截图
                         if not self.match_touch("挑战.png"):
                             break
@@ -408,9 +412,9 @@ class Onmyoji:
                 pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
                 self.logger.info(f"点击屏幕:{pos}")
                 self.adb.click(pos)
-                fun.random_time(2, 2.5)  # 随机等待
+                self.mood.mood_sleep()  # 随机等待
                 self.adb.screenshot()  # 截图
-            fun.random_time(0.5, 0.8)  # 随机等待
+            self.mood.mood_sleep()  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
                 self.logger.info("结算成功")
                 return end_sign
@@ -444,7 +448,7 @@ class Onmyoji:
         :return: 是否开启默认邀请成功
         """
         if self.match_touch("默认邀请.png", "组队"):
-            fun.random_time(0.2, 0.5)
+            self.mood.mood_sleep()
             if self.match_touch("确定.png", "公共"):
                 self.logger.info("开启默认邀请")
                 return True
@@ -520,7 +524,7 @@ class Onmyoji:
         self.logger.info("测试函数开始执行")
         for _ in range(10):
             self.logger.info("测试函数执行")
-            fun.random_time(1, 2)
+            self.mood.mood_sleep()
         self.logger.info("测试函数执行结束")
 
 
