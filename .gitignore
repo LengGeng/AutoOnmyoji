@@ -11,6 +11,5 @@ log/*
 images/screen/*.png
 webgui/screen/
 # 测试
-discard.py
-test.py
+test/
 run.bat

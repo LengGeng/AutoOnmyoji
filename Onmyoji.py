@@ -16,7 +16,7 @@ import os
 import time
 
 
-class Onmyoji:
+class BaseOnmyoji:
     threshold = 0.8  # 图像识别相似度
     image_path = "images"  # 模板图片路径
     images = dict()  # 模板图片集
@@ -25,6 +25,15 @@ class Onmyoji:
         self.adb = Adb()
         self.module = ""
         self.mood = Mood()
+
+    # 初始化Logger
+    def init_logger(self):
+        LOG_DIR_NAME = os.path.join("log", self.adb.device.strip().split(" ")[-1])
+        if not os.path.exists(LOG_DIR_NAME):
+            os.makedirs(LOG_DIR_NAME)
+        LOG_FILENAME = os.path.join(LOG_DIR_NAME, time.strftime("LOG_%Y%m%d.log", time.localtime()))
+        self.logger = get_logger(LOG_FILENAME)
+        self.logger.info("*" * 15 + "启动" + "*" * 15)
 
     # 获取图片对象
     def get_img(self, filename):
@@ -90,17 +99,185 @@ class Onmyoji:
                 return True
         return False
 
+    # 结束
+    def _end_(self, invite=False):
+        """
+        判断并点击界面跳过结算界面(旧版本宝箱结算)
+        :return: 结算结果
+        """
+        # 等待结束
+        while True:
+            end_sign = None  # 结算成功标志
+            self.adb.screenshot()  # 截图
+            # 一旦检测到结算标志进入循环,再次检测不到退出
+            while self.matchs(
+                    ("战斗胜利.png", "公共"),
+                    ("战斗失败.png", "公共"),
+                    ("结束标志.png", "公共"),
+                    ("贪吃鬼.png", "公共"),
+                    ("宝箱.png", "公共"),
+                    ("宝箱2.png", "公共"),
+            ):
+                self.logger.info("检测到结算页面")
+                end_sign = True
+                # 默认邀请队友
+                if invite:
+                    if self._invite_():
+                        break
+                if self.match("战斗失败.png", "公共"):
+                    self.logger.info("检测到战斗失败")
+                    end_sign = False
+                end_regions = [
+                    [[0.625, 0.9], [0.8, 0.98]],
+                    [[0.93, 0.33], [0.98, 0.66]],
+                ]
+                pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
+                self.logger.info(f"点击屏幕:{pos}")
+                self.adb.click(pos)
+                self.mood.mood_sleep()  # 随机等待
+                self.adb.screenshot()  # 截图
+            self.mood.mood_sleep()  # 随机等待
+            if end_sign is not None:  # 结算后跳出结算循环
+                self.logger.info("结算成功")
+                return end_sign
+
+    # 准备
+    @threading_timeoutable()
+    def _ready_(self):
+        """
+        准备
+        :param timeout: 超时时间
+        :return: 是否成功准备
+        """
+        try:
+            ready_sign = False
+            while True:
+                self.adb.screenshot()  # 截图
+                while self.match("准备.png", "公共"):
+                    self.adb.screenshot()  # 截图
+                    self.match_touch("准备.png", "公共")
+                    ready_sign = True
+                if ready_sign:
+                    self.logger.info("准备")
+                    return True
+        except TimeoutException:
+            self.logger.warning("准备超时退出")
+
+    # 开启默认邀请
+    def _invite_(self):
+        """
+        开启默认邀请
+        :return: 是否开启默认邀请成功
+        """
+        if self.match_touch("默认邀请.png", "组队"):
+            self.mood.mood_sleep()
+            if self.match_touch("确定.png", "公共"):
+                self.logger.info("开启默认邀请")
+                return True
+            else:
+                self.logger.warning("默认邀请失败")
+                return False
+
+    # 开启接受默认邀请
+    @threading_timeoutable()
+    def _accept_invite_(self):
+        try:
+            while True:
+                if self.match_touch("同意默认邀请.png", "组队"):
+                    self.logger.info("同意接受默认邀请")
+                    return True
+        except TimeoutException:
+            self.logger.warning("没有收到队友的默认邀请")
+
+    # 正常挑战
+    def _combat_(self):
+        """
+        正常挑战,循环点击挑战与结束
+        :return:
+        """
+        self.adb.screenshot()
+        if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
+            self.logger.info("开始挑战")
+            self._ready_(timeout=8)
+            if self._end_():
+                self.logger.info("结束挑战")
+                return True
+        return False
+
+    # 异常检测
+    def _check_(self):
+        """
+        检测异常行为,如悬赏任务等
+        :return:
+        """
+        self.logger.warning("开始执行异常检测")
+        self._reward_task_()
+
+    # 协作邀请
+    def _reward_task_(self, accept=False):
+        category_dir = "异常处理/"
+        if self.match(category_dir + "协作邀请.png"):
+            self.logger.info("检测到协作邀请")
+            if accept:
+                self.match_touch("公共/" + "同意.png")
+                self.logger.info("协作邀请已同意")
+            else:
+                self.match_touch("公共/" + "拒绝.png")
+                self.logger.info("协作邀请已拒绝")
+
+    # 确认阵容锁定状态
+    def _locking_(self):
+        """
+        确认阵容锁定状态
+        :return: bool
+        """
+        if self.match("锁.png", "公共"):
+            self.logger.info("当前阵容已处于锁定状态")
+            return True
+        elif self.match_touch("锁_开.png", "公共"):
+            self.logger.info("当前阵容未锁定,已为您自动锁定")
+            return True
+        else:
+            self.logger.info("未检测到阵容锁定按钮")
+            return False
+
+
+class Onmyoji(BaseOnmyoji):
+    __doc_all__ = [
+        "test",
+        "combat",
+        "yeyuanhuo",
+        "zudui",
+        "chengke",
+        "jiejie",
+        "wanshiwu",
+        "chaoguiwang",
+    ]
+
     # 挑战
     def combat(self, count):
+        """挑战
+        该功能用于正常的副本挑战,可适用于业原火、御灵、单人御魂、单人觉醒等场景。需要处于相应场景下,有该场景的挑战按钮。
+        :param count: 挑战的次数
+        :return:
+        """
+        self.logger.info("任务: 挑战")
         i = 0
         while i < count:
-            if self.__combat__():
+            if self._combat_():
                 i += 1
                 self.logger.info("当前为第{}次挑战".format(i))
         self.logger.info("任务结束，总共进行了{}次挑战".format(i))
 
     # 业原火
     def yeyuanhuo(self, tan=0, zen=0, chi=0):
+        """业原火
+        该功能用于业原火副本。可以选择贪嗔痴不同的挑战次数。需要处于庭院或业原火挑战界面。
+        :param tan: 贪的数量
+        :param zen: 嗔的数量
+        :param chi: 痴的数量
+        :return:
+        """
         self.module = "业原火"
         self.logger.info("任务: " + self.module)
         option = list("贪嗔痴")
@@ -123,7 +300,7 @@ class Onmyoji:
                     self.logger.info("进入业原火页面")
                     break
         # 检查是否锁定阵容
-        self.__locking__()
+        self._locking_()
         # 开始业原火流程
         for category in option:
             count = options[category]
@@ -132,16 +309,16 @@ class Onmyoji:
                     self.logger.info("切换至" + category)
                 i = 0
                 while i < count:
-                    if self.__combat__():
+                    if self._combat_():
                         i += 1
                         self.logger.info("当前为第%s次%s" % (i, category))
                 self.logger.info("总共进行了%s次%s" % (i, category))
 
     # 组队
     def zudui(self, count):
-        """
-        组队司机功能
-        :param count: 挑战次数
+        """组队司机
+        该功能用于正常的组队挑战。可适应于组队御魂、觉醒等，需要先手动组队并勾选默认邀请。
+        :param count: 组队的次数
         :return:
         """
         self.module = "组队"
@@ -150,12 +327,12 @@ class Onmyoji:
         i = 0
         while i < int(count):
             self.adb.screenshot()
-            if self.__locking__():
+            if self._locking_():
                 if self.match("组队开始标志.png"):
                     if self.match_touch("挑战.png"):
                         self.logger.info("开始战斗")
-                        self.__ready__(timeout=8)  # 准备
-                        if self.__end__(invite=True):
+                        self._ready_(timeout=8)  # 准备
+                        if self._end_(invite=True):
                             i += 1
                             self.logger.info("当前已进行{}次".format(i))
                     else:
@@ -168,10 +345,11 @@ class Onmyoji:
 
     # 乘客
     def chengke(self, count: int, accept: bool = True):
-        """
-        组队乘客功能
-        :param count: 挑战次数
-        :param accept: 接受默认邀请
+        """组队乘客
+        该功能用于正常的组队挑战。可适应于组队御魂、觉醒等，需要先勾选自动接收邀请。
+        :param count: 组队的次数
+        :param accept: 是否接受默认邀请
+        :type accept: bool
         :return:
         """
         self.logger.info("任务：组队乘客")
@@ -180,17 +358,17 @@ class Onmyoji:
         while i < int(count):
             self.adb.screenshot()
             if accept:
-                if self.__accept_invite__(timeout=8):
+                if self._accept_invite_(timeout=8):
                     accept = False
-            self.__ready__(timeout=5)
-            if self.__end__():
+            self._ready_(timeout=5)
+            if self._end_():
                 i += 1
                 self.logger.info("当前已进行{}次".format(i))
 
     # 结界突破
     def jiejie(self):
-        """
-        结界突破功能
+        """结界突破
+        该功能用于结界突破。目前功能仍使用的老旧代码，请谨慎使用。
         :return:
         """
         self.module = "结界"
@@ -246,7 +424,7 @@ class Onmyoji:
                             if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
                                 self.adb.screenshot()
-                                if self.__end__():
+                                if self._end_():
                                     self.logger.info("突破成功")
                                     self.mood.mood_sleep()
                                     break
@@ -265,6 +443,10 @@ class Onmyoji:
 
     # 万事屋
     def wanshiwu(self):
+        """万事屋自动领取
+        该功能用于万事屋活动。用于自动领取奖励，需要处于庭院或万事屋主界面。
+        :return:
+        """
         self.module = "万事屋/"
         # 进入万事屋
         self.adb.screenshot()
@@ -279,7 +461,7 @@ class Onmyoji:
         while True:
             self.adb.screenshot()
             # 异常检查
-            self.__check__()
+            self._check_()
             # 检测突发状况Buff
             if self.match("事件_突发状况.png"):
                 self.logger.info("检测到突发状况Buff")
@@ -313,8 +495,9 @@ class Onmyoji:
 
     # 超鬼王
     def chaoguiwang(self):
-        """
-        超鬼王功能
+        """超鬼王
+        该功能用于超鬼王活动。通过挑战单人觉醒刷超鬼王并自动击杀。需要预先配置好觉醒挑战层数和超鬼王阵容。
+        可能会因为网络波动而错过检测到超鬼王弹出界面，导致错过该超鬼王，并在该超鬼王存在期间持续挑战觉醒。
         :return:
         """
         self.module = "超鬼王"
@@ -328,7 +511,7 @@ class Onmyoji:
             self.mood.mood_sleep()  # 随机等待
             self.adb.screenshot()  # 截图
             self.match_touch(fun.choice(kyLin))  # 选择列表中随机一个进行点击
-            if self.__locking__():
+            if self._locking_():
                 self.logger.info("当前阵容已处于锁定状态")
 
                 # 进入循环挑战觉醒阶段
@@ -343,7 +526,7 @@ class Onmyoji:
                     if self.match_touch("挑战.png", "觉醒"):
                         self.logger.info("开始挑战")
                         # 等待挑战结束
-                        if self.__end__():
+                        if self._end_():
                             rouse_count += 1
                             self.logger.info("当前已进行%s次觉醒" % rouse_count)
 
@@ -359,168 +542,21 @@ class Onmyoji:
                             break
                         self.logger.info("开始挑战超鬼王")
                         # 准备
-                        self.__ready__()
+                        self._ready_()
                         # 等待结束
-                        if self.__end__():
+                        if self._end_():
                             count += 1
                     if self.match_touch("返回.png", "公共"):
                         self.logger.info("击败超鬼王,跳出超鬼王阶段")
                         self.logger.info("当前已击败%s只鬼王" % count)
                         break
 
-    # 初始化Logger
-    def __init_logger__(self):
-        LOG_DIR_NAME = os.path.join("log", self.adb.device.strip().split(" ")[-1])
-        if not os.path.exists(LOG_DIR_NAME):
-            os.makedirs(LOG_DIR_NAME)
-        LOG_FILENAME = os.path.join(LOG_DIR_NAME, time.strftime("LOG_%Y%m%d.log", time.localtime()))
-        self.logger = get_logger(LOG_FILENAME)
-        self.logger.info("*" * 15 + "启动" + "*" * 15)
-
-    # 结束
-    def __end__(self, invite=False):
-        """
-        判断并点击界面跳过结算界面(旧版本宝箱结算)
-        :return: 结算结果
-        """
-        # 等待结束
-        while True:
-            end_sign = None  # 结算成功标志
-            self.adb.screenshot()  # 截图
-            # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.matchs(
-                    ("战斗胜利.png", "公共"),
-                    ("战斗失败.png", "公共"),
-                    ("结束标志.png", "公共"),
-                    ("贪吃鬼.png", "公共"),
-                    ("宝箱.png", "公共"),
-                    ("宝箱2.png", "公共"),
-            ):
-                self.logger.info("检测到结算页面")
-                end_sign = True
-                # 默认邀请队友
-                if invite:
-                    if self.__invite__():
-                        break
-                if self.match("战斗失败.png", "公共"):
-                    self.logger.info("检测到战斗失败")
-                    end_sign = False
-                end_regions = [
-                    [[0.625, 0.9], [0.8, 0.98]],
-                    [[0.93, 0.33], [0.98, 0.66]],
-                ]
-                pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
-                self.logger.info(f"点击屏幕:{pos}")
-                self.adb.click(pos)
-                self.mood.mood_sleep()  # 随机等待
-                self.adb.screenshot()  # 截图
-            self.mood.mood_sleep()  # 随机等待
-            if end_sign is not None:  # 结算后跳出结算循环
-                self.logger.info("结算成功")
-                return end_sign
-
-    # 准备
-    @threading_timeoutable()
-    def __ready__(self):
-        """
-        准备
-        :param timeout: 超时时间
-        :return: 是否成功准备
-        """
-        try:
-            ready_sign = False
-            while True:
-                self.adb.screenshot()  # 截图
-                while self.match("准备.png", "公共"):
-                    self.adb.screenshot()  # 截图
-                    self.match_touch("准备.png", "公共")
-                    ready_sign = True
-                if ready_sign:
-                    self.logger.info("准备")
-                    return True
-        except TimeoutException:
-            self.logger.warning("准备超时退出")
-
-    # 开启默认邀请
-    def __invite__(self):
-        """
-        开启默认邀请
-        :return: 是否开启默认邀请成功
-        """
-        if self.match_touch("默认邀请.png", "组队"):
-            self.mood.mood_sleep()
-            if self.match_touch("确定.png", "公共"):
-                self.logger.info("开启默认邀请")
-                return True
-            else:
-                self.logger.warning("默认邀请失败")
-                return False
-
-    # 开启接受默认邀请
-    @threading_timeoutable()
-    def __accept_invite__(self):
-        try:
-            while True:
-                if self.match_touch("同意默认邀请.png", "组队"):
-                    self.logger.info("同意接受默认邀请")
-                    return True
-        except TimeoutException:
-            self.logger.warning("没有收到队友的默认邀请")
-
-    # 正常挑战
-    def __combat__(self):
-        """
-        正常挑战,循环点击挑战与结束
-        :return:
-        """
-        self.adb.screenshot()
-        if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
-            self.logger.info("开始挑战")
-            self.__ready__(timeout=8)
-            if self.__end__():
-                self.logger.info("结束挑战")
-                return True
-        return False
-
-    # 异常检测
-    def __check__(self):
-        """
-        检测异常行为,如悬赏任务等
-        :return:
-        """
-        self.logger.warning("开始执行异常检测")
-        self.__reward_task__()
-
-    # 协作邀请
-    def __reward_task__(self, accept=False):
-        category_dir = "异常处理/"
-        if self.match(category_dir + "协作邀请.png"):
-            self.logger.info("检测到协作邀请")
-            if accept:
-                self.match_touch("公共/" + "同意.png")
-                self.logger.info("协作邀请已同意")
-            else:
-                self.match_touch("公共/" + "拒绝.png")
-                self.logger.info("协作邀请已拒绝")
-
-    # 确认阵容锁定状态
-    def __locking__(self):
-        """
-        确认阵容锁定状态
-        :return: bool
-        """
-        if self.match("锁.png", "公共"):
-            self.logger.info("当前阵容已处于锁定状态")
-            return True
-        elif self.match_touch("锁_开.png", "公共"):
-            self.logger.info("当前阵容未锁定,已为您自动锁定")
-            return True
-        else:
-            self.logger.info("未检测到阵容锁定按钮")
-            return False
-
     # 测试
     def test(self):
+        """测试
+        该功能仅用于测试
+        :return:
+        """
         self.logger.info("测试函数开始执行")
         for _ in range(10):
             self.logger.info("测试函数执行")
@@ -530,12 +566,13 @@ class Onmyoji:
 
 def _test():
     onmyoji = Onmyoji()
-    onmyoji.adb.connect_device()
-    onmyoji.__init_logger__()
-    # onmyoji.zudui(1234)
-    onmyoji.combat(500)
-    # onmyoji.yeyuanhuo(12, 34, 56)
-    # onmyoji.jiejie()
+    connect = onmyoji.adb.connect_device()
+    if connect:
+        onmyoji.init_logger()
+        # onmyoji.zudui(1234)
+        onmyoji.combat(500)
+        # onmyoji.yeyuanhuo(12, 34, 56)
+        # onmyoji.jiejie()
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
-# By 愿与君长安
-# 最后修改于2020.9.1
+REM By 愿与君长安
+REM 最后修改于2020.9.1
 @echo off
 MODE con: COLS=80 LINES=18
 color b & title 自动关机＆重启程序

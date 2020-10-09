@@ -56,7 +56,7 @@ ul > li {
       flex-flow: column nowrap;
       justify-content: space-between;
       align-items: flex-start; }
-      .config .funs #args > input {
+      .config .funs #args > label {
         margin: 8px 0; }
 
 .run {

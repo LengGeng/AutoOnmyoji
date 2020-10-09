@@ -42,16 +42,23 @@
                 <label for="funs">选择功能：</label>
                 <select id="funs" v-model="fun" @change="changeFuns">
                     <template v-for="item in FUNS">
-                        <option :value="item.fun">{{ item.name }}</option>
+                        <option :value="item.function">{{ item.name }}</option>
                     </template>
                 </select>
             </div>
             <div id="args">
                 <p>{{ argsItem.name }}</p>
-                <p>{{ argsItem.msg }}</p>
-                <template v-if="argsItem.args.length === 0"><p>该功能不使用参数!</p></template>
-                <template v-else v-for="(arg,i) in argsItem.args">
-                    <input v-model.number="args[i]" type="number" :placeholder="arg">
+                <p>{{ argsItem.desc }}</p>
+                <template v-if="!argsItem.args"><p>该功能不使用参数!</p></template>
+                <template v-else v-for="(info,arg) in argsItem.args">
+                    <label>
+                        <template v-if="info['type'] != undefined && info.type=='bool'">
+                            <input v-model="kwargs[arg]" type="checkbox">{{info.desc}}
+                        </template>
+                        <template v-else=>
+                            <input v-model.number="kwargs[arg]" type="number" :placeholder="info.desc">
+                        </template>
+                    </label>
                 </template>
             </div>
         </div>
@@ -82,11 +89,11 @@
             fun: null,// 选择的功能
             argsItem: {
                 name: undefined,
-                fun: undefined,
-                args: [],
-                msg: undefined
+                function: undefined,
+                args: {},
+                desc: undefined
             },// 功能对象
-            args: [],// 用户输入的功能的参数
+            kwargs: {},// 用户输入的功能的参数
 
         },
         created() {
@@ -108,7 +115,11 @@
                     let data = response.data;
                     if (!response.code) {
                         this.devices = data.data.filter(item => item[1] === "device");
-                        this.device = this.devices[0][0];
+                        if (this.devices.length) {
+                            this.device = this.devices[0][0];
+                        } else {
+                            alert("未能获取到设备,请检查设备连接!")
+                        }
                     } else {
                         this.devices = [];
                         alert("设备获取失败");
@@ -134,60 +145,15 @@
             },
             // 获取功能列表
             get_funs() {
-                this.FUNS = [
-                    {
-                        name: "挑战",
-                        fun: "combat",
-                        args: ["请输入挑战的次数"],
-                        msg: "该功能用于正常的副本挑战,可适用于业原火、御灵、单人御魂、单人觉醒等场景。需要处于相应场景下,有该场景的挑战按钮。"
-                    },
-                    {
-                        name: "业原火",
-                        fun: "yeyuanhuo",
-                        args: ['请输入贪的数量', '请输入嗔的数量', '请输入痴的数量'],
-                        msg: "该功能用于业原火副本。可以选择贪嗔痴不同的挑战次数。需要处于庭院或业原火挑战界面。"
-                    },
-                    {
-                        name: "组队司机",
-                        fun: "zudui",
-                        args: ['请输入组队的次数'],
-                        msg: "该功能用于正常的组队挑战。可适应于组队御魂、觉醒等，需要先手动组队并勾选默认邀请。"
-                    },
-                    {
-                        name: "组队乘客",
-                        fun: "chengke",
-                        args: ['请输入组队的次数'],
-                        msg: "该功能用于正常的组队挑战。可适应于组队御魂、觉醒等，需要先勾选自动接收邀请。"
-                    },
-                    {
-                        name: "结界突破",
-                        fun: "jiejie",
-                        args: [],
-                        msg: "该功能用于结界突破。目前功能仍使用的老旧代码，请谨慎使用。"
-                    },
-                    {
-                        name: "万事屋自动领取",
-                        fun: "wanshiwu",
-                        args: [],
-                        msg: "该功能用于万事屋活动。用于自动领取奖励，需要处于庭院或万事屋主界面。"
-                    },
-                    {
-                        name: "超鬼王",
-                        fun: "chaoguiwang",
-                        args: [],
-                        msg: "该功能用于超鬼王活动。通过挑战单人觉醒刷超鬼王并自动击杀。需要预先配置好觉醒挑战层数和超鬼王阵容。" +
-                            "可能会因为网络波动而错过检测到超鬼王弹出界面，导致错过该超鬼王，并在该超鬼王存在期间持续挑战觉醒。"
-                    },
-                    {
-                        name: "测试",
-                        fun: "test",
-                        args: [],
-                        msg: "该功能用于测试"
-                    },
-                ];
-                this.argsItem = this.FUNS[0];
-                this.fun = this.FUNS[0].fun;
-                this.args = new Array(this.argsItem.args.length);
+                axios.post("/fun").then(response => {
+                    let data = response.data;
+                    if (!data.code) {
+                        this.FUNS = data.data;
+                        this.argsItem = this.FUNS[0];
+                        this.fun = this.FUNS[0].function;
+                        this.kwargs = {};
+                    }
+                });
             },
             // 获取正在进行的任务
             getActive() {
@@ -203,13 +169,11 @@
             // 切换功能
             changeFuns(e) {
                 let fun_active = e.target.value;
-                console.log(fun_active);
+                console.log("切换功能至: ", fun_active);
                 let self = this;
                 this.FUNS.forEach(item => {
-                    if (item.fun === fun_active) {
-                        console.log(item);
-                        self.args = new Array(item.args.length);
-                        console.log(self.args);
+                    if (item.function === fun_active) {
+                        this.kwargs = {};
                         self.argsItem = item;
                     }
                 });
@@ -221,12 +185,12 @@
                 // 获取选择的功能
                 let fun = this.fun;
                 // 获取参数列表
-                let args = [];
+                let kwargs = {};
                 // 参数过滤,设置默认值
-                for (let i = 0; i < this.args.length; i++) {
-                    args.push(this.args[i] ? this.args[i] : 0);
+                for (let arg in this.kwargs) {
+                    kwargs[arg] = (this.kwargs[arg] ? this.kwargs[arg] : 0);
                 }
-                let data = {device: device, fun: fun, args: args};
+                let data = {device: device, fun: fun, kwargs: kwargs};
                 console.log(data);
                 axios.post("/run", data).then(response => {
                     let data = response.data;

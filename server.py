@@ -7,12 +7,13 @@
 import ssl
 import json
 import os.path
-from Onmyoji import Onmyoji
 import urllib.parse
 from utils.adb import Adb
+from Onmyoji import Onmyoji
 from multiprocessing import Process
 from webbrowser import open as webopen
 from multiprocessing import freeze_support
+from run import OnmyojiRun, get_devices, get_fun
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 GUI_DIR = 'webgui'
@@ -37,6 +38,11 @@ ACTIVITY = {}
 
 
 def get_request_params(text: str, content_type: str = None):
+    """解析请求参数
+    :param text: 参数文本
+    :param content_type: Content-Type
+    :return:
+    """
     if content_type is not None:
         if content_type.startswith("application/json"):
             return json.loads(text)
@@ -45,37 +51,25 @@ def get_request_params(text: str, content_type: str = None):
     return urllib.parse.parse_qs(text)
 
 
-def Run(device, fun, args):
-    onmyoji = Onmyoji()
-    onmyoji.adb.set_device(device)
-    onmyoji.__init_logger__()
-    if hasattr(onmyoji, fun):
-        function = getattr(onmyoji, fun)
-        function(*args)
-    else:
-        exit("无效的功能函数")
-
-
-def OnmyojiRun(option):
+def Run(option):
     device = option['device']
     fun = option['fun']
-    args = option['args']
+    args = option.get("args") or ()
+    kwargs = option.get("kwargs") or {}
     if device in ACTIVITY:
         return {"code": 1001, "msg": "该设备已有执行的任务!"}
     else:
-        p = Process(target=Run, args=(device, fun, args,))
+        p = Process(target=OnmyojiRun, args=(device, fun, *args), kwargs=kwargs)
         ACTIVITY[device] = [fun, p]
         p.start()
     print("开始执行任务")
-    print(option)
-
-
-def get_device():
-    devices_list = Adb.get_devices_list()
-    return devices_list
 
 
 def screen(option):
+    """截图
+    :param option: 参数
+    :return: 截图文件路径
+    """
     device = option['device']
     adb = Adb()
     adb.set_device(device)
@@ -95,10 +89,11 @@ def get_active():
 
 
 ROUTER = {
-    "/run": OnmyojiRun,  # 执行任务
-    "/device": get_device,  # 返回设备
+    "/run": Run,  # 执行任务
+    "/device": get_devices,  # 返回设备
     "/screen": screen,  # 截图
     "/active": get_active,  # 活动任务
+    "/fun": get_fun,  # 获取功能参数
 }
 
 
@@ -116,7 +111,7 @@ class OnmyojiHTTPRequestHandler(BaseHTTPRequestHandler):
             # 获取url路径
             url_path = url.path
             # url里的参数
-            RequestArgs = get_request_params(url.query)
+            # RequestArgs = get_request_params(url.query)
             # print('RequestType: GET')
             # print('URL: ', url)
             # print('URL_PATH: ', url_path)
@@ -150,7 +145,7 @@ class OnmyojiHTTPRequestHandler(BaseHTTPRequestHandler):
             request_text = self.rfile.read(int(self.headers['content-length'])).decode()  # 重点在此步!
             content_type = self.headers['content-type']
             RequestArgs = get_request_params(request_text, content_type)
-            print(f'RequestType: POST\nURL: {url}\nURL_PATH: {url_path}\nRequestArgs: {RequestArgs}')
+            print(f'RequestArgs: {RequestArgs}')
 
             response = {"code": 0}
             if url_path in ROUTER:
@@ -159,12 +154,11 @@ class OnmyojiHTTPRequestHandler(BaseHTTPRequestHandler):
                     data = function(RequestArgs)
                 else:
                     data = function()
-                print(data)
                 if type(data) == dict:
                     response.update(data)
                 else:
                     response["data"] = data
-                print(response)
+                print("response: ", response)
                 self._sendHttpBody(response)
             else:
                 print("无效的请求")
