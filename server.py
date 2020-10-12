@@ -6,10 +6,10 @@
 # 开发工具  :   PyCharm
 import ssl
 import json
+import psutil
 import os.path
 import urllib.parse
 from utils.adb import Adb
-from Onmyoji import Onmyoji
 from multiprocessing import Process
 from webbrowser import open as webopen
 from multiprocessing import freeze_support
@@ -33,10 +33,36 @@ CONTENT_TYPE = {
     '.ico': 'image/png',
     '.js': 'application/javascript',
     '.avi': 'video/x-msvideo',
+    '.ttf': 'font/ttf',
+    '.woff': 'font/woff',
 }
 ACTIVITY = {}
 
 
+# 暂停进程
+def suspendProcess(process: Process):
+    pid = process.pid
+    print('进程暂停 进程编号 %s ' % pid)
+    p = psutil.Process(pid)
+    p.suspend()
+
+
+# 唤醒进程
+def wakeProcess(process: Process):
+    pid = process.pid
+    print('进程恢复 进程编号 %s ' % pid)
+    p = psutil.Process(pid)
+    p.resume()
+
+
+# 关闭进程
+def finishProcess(process: Process):
+    pid = process.pid
+    print('进程关闭 进程编号 %s ' % pid)
+    process.terminate()
+
+
+# 解析请求参数
 def get_request_params(text: str, content_type: str = None):
     """解析请求参数
     :param text: 参数文本
@@ -51,20 +77,24 @@ def get_request_params(text: str, content_type: str = None):
     return urllib.parse.parse_qs(text)
 
 
+# 运行任务
 def Run(option):
     device = option['device']
     fun = option['fun']
     args = option.get("args") or ()
     kwargs = option.get("kwargs") or {}
     if device in ACTIVITY:
-        return {"code": 1001, "msg": "该设备已有执行的任务!"}
-    else:
-        p = Process(target=OnmyojiRun, args=(device, fun, *args), kwargs=kwargs)
-        ACTIVITY[device] = [fun, p]
-        p.start()
+        p: Process = ACTIVITY[device]["process"]
+        if p.is_alive():
+            return {"code": 1001, "msg": "该设备已有执行的任务!"}
+
+    p = Process(target=OnmyojiRun, args=(device, fun, *args), kwargs=kwargs)
+    ACTIVITY[device] = {"fun": fun, "process": p, "suspend": False}
+    p.start()
     print("开始执行任务")
 
 
+# 获取截图
 def screen(option):
     """截图
     :param option: 参数
@@ -79,21 +109,68 @@ def screen(option):
     return filename
 
 
+# 获取活动任务
 def get_active():
     active = []
     print(ACTIVITY)
     if ACTIVITY:
-        for device, item in ACTIVITY.items():
-            active.append({'device': device, 'fun': item[0]})
+        for device, info in ACTIVITY.items():
+            fun = info["fun"]
+            process = info["process"]
+            suspend = info["suspend"]
+            active.append({'device': device, 'fun': fun, "alive": process.is_alive(), "suspend": suspend})
     return active
 
 
+# 结束任务
+def finish(option):
+    device = option['device']
+    if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
+        process: Process = ACTIVITY[device]["process"]
+        finishProcess(process)
+        return {"data": "success"}
+    else:
+        return {"code": 500, "mag": "当前设备没有正在执行的任务"}
+
+
+# 暂停任务
+def suspend(option):
+    device = option['device']
+    if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
+        process: Process = ACTIVITY[device]["process"]
+        suspend: bool = ACTIVITY[device]["suspend"]
+        if not suspend:
+            suspendProcess(process)
+            ACTIVITY[device]["suspend"] = True
+            return {"data": "success"}
+    else:
+        return {"code": 500, "mag": "当前设备没有正在执行的任务"}
+
+
+# 唤醒任务
+def wake(option):
+    device = option['device']
+    if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
+        process: Process = ACTIVITY[device]["process"]
+        suspend: bool = ACTIVITY[device]["suspend"]
+        if suspend:
+            wakeProcess(process)
+            ACTIVITY[device]["suspend"] = False
+            return {"data": "success"}
+    else:
+        return {"code": 500, "mag": "当前设备没有正在执行的任务"}
+
+
+# 路由表
 ROUTER = {
     "/run": Run,  # 执行任务
     "/device": get_devices,  # 返回设备
     "/screen": screen,  # 截图
     "/active": get_active,  # 活动任务
     "/fun": get_fun,  # 获取功能参数
+    "/finish": finish,  # 结束任务
+    "/suspend": suspend,  # 暂停任务
+    "/wake": wake,  # 唤醒任务
 }
 
 

@@ -10,6 +10,7 @@ dist
 log/*
 images/screen/*.png
 webgui/screen/
+webgui/css/.sass-cache/
 # 测试
 test/
 run.bat

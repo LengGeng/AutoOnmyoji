@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>设备连接</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>AutoOnmyoji</title>
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
     <!--<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>-->
     <script src="js/vue.js"></script>
@@ -15,71 +14,196 @@
     <!-- Axios -->
     <!--<script src="https://unpkg.com/axios/dist/axios.min.js"></script>-->
     <script src="js/axios.min.js"></script>
+
+    <!-- Element -->
+    <!-- 引入样式 -->
+    <!--<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">-->
+    <link rel="stylesheet" href="lib/element-ui/index.css">
+    <!-- 引入组件库 -->
+    <!--<script src="https://unpkg.com/element-ui/lib/index.js"></script>-->
+    <script src="lib/element-ui/index.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        #app {
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .choice-device {
+            display: flex;
+            flex-flow: row wrap;
+            margin: 0 20px;
+            justify-content: space-between;
+        }
+
+        .funs {
+            margin: 0 20px;
+        }
+
+        .run {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+        }
+    </style>
 </head>
 <body>
-<div id="app">
-    <!-- 参数配置 -->
-    <div class="config">
+<div id="app" style="display: flex;flex-flow: column">
+    <el-tabs v-model="activeName" type="border-card" style="width: 60%;margin: 0 auto;flex: 1">
         <!-- 设备连接 -->
-        <div class="connect">
-            <div class="choice-device">
-                <label for="device">选择设备：</label>
-                <select id="device" v-model="device">
-                    <template v-for="[id, status] in devices">
-                        <option :value="id">{{id}}</option>
-                    </template>
-                </select>
-                <button id="re-device" @click="getDevice">刷新</button>
-                <button id="screen" @click="getScreen">截图</button>
-                <button id="screen-close" @click="screenClose">{{ showScreen?"隐藏截图":"显示截图"}}</button>
+        <el-tab-pane label="设备连接" name="connect">
+            <!-- 设备连接 -->
+            <div class="connect">
+                <!-- 选择设备 -->
+                <div class="choice-device">
+                    <el-form ref="form" label-width="100px" label-position="left">
+                        <el-form-item label="选择设备：">
+                            <el-select v-model="device" placeholder="请选择设备:">
+                                <el-option
+                                        v-for="[id, status] in devices"
+                                        :key="id"
+                                        :label="id"
+                                        :value="id">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-form>
+                    <el-button-group>
+                        <el-button plain @click="getDevice">刷新</el-button>
+                        <el-button plain @click="getScreen">截图</el-button>
+                        <el-button plain @click="screenClose">{{ showScreen ? "隐藏截图" : "显示截图" }}
+                        </el-button>
+                    </el-button-group>
+                </div>
+                <!-- 设备截图 -->
+                <el-image
+                        style="margin: 20px"
+                        :src="screenLink"
+                        alt="截图"
+                        v-if="screenLink"
+                        v-show="showScreen">
+                </el-image>
             </div>
-            <img v-show="screenLink && showScreen" class="screen-img" :src="screenLink" alt="截图">
-        </div>
-
-        <!-- 功能参数 -->
-        <div class="funs">
-            <div class="choice-funs">
-                <label for="funs">选择功能：</label>
-                <select id="funs" v-model="fun" @change="changeFuns">
-                    <template v-for="item in FUNS">
-                        <option :value="item.function">{{ item.name }}</option>
-                    </template>
-                </select>
-            </div>
-            <div id="args">
-                <p>{{ argsItem.name }}</p>
-                <p>{{ argsItem.desc }}</p>
-                <template v-if="!argsItem.args"><p>该功能不使用参数!</p></template>
-                <template v-else v-for="(info,arg) in argsItem.args">
-                    <label>
-                        <template v-if="info['type'] != undefined && info.type=='bool'">
-                            <input v-model="kwargs[arg]" type="checkbox">{{info.desc}}
+        </el-tab-pane>
+        <!-- 功能选择 -->
+        <el-tab-pane label="功能选择" name="second">
+            <!-- 功能配置 -->
+            <div class="funs">
+                <!-- 功能选择 -->
+                <div class="choice-funs">
+                    <el-form ref="form" label-width="100px" label-position="left">
+                        <el-form-item label="选择功能：">
+                            <el-select v-model="fun" placeholder="请选择功能:" @change="changeFuns">
+                                <el-option
+                                        v-for="item in FUNS"
+                                        :key="item.function"
+                                        :label="item.name"
+                                        :value="item.function">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-form>
+                </div>
+                <!-- 功能介绍 -->
+                <div class="info">
+                    <el-divider content-position="left">{{ argsItem.name }}</el-divider>
+                    <span>{{ argsItem.desc }}</span>
+                    <el-divider></el-divider>
+                </div>
+                <!-- 功能参数 -->
+                <div id="args">
+                    <el-form ref="args" label-position="left"
+                             v-if="argsItem.args && '{}' != JSON.stringify(argsItem.args)">
+                        <template v-for="(info,arg) in argsItem.args">
+                            <!-- 多选框类型 -->
+                            <template v-if="info['type'] != undefined && info.type=='bool'">
+                                <el-checkbox v-model="kwargs[arg]">{{info.desc}}</el-checkbox>
+                            </template>
+                            <!-- 数字类型 -->
+                            <template v-else>
+                                <el-form-item :label="info.desc">
+                                    <el-input-number
+                                            v-model="kwargs[arg]"
+                                            controls-position="right"
+                                            :min="0"
+                                            placeholder="0">
+                                    </el-input-number>
+                                </el-form-item>
+                            </template>
                         </template>
-                        <template v-else=>
-                            <input v-model.number="kwargs[arg]" type="number" :placeholder="info.desc">
-                        </template>
-                    </label>
-                </template>
+                    </el-form>
+                    <p v-else>该功能不使用参数!</p>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <!-- 执行任务 -->
-    <div class="run">
-        <button @click="Run">执行任务</button>
-    </div>
-
-    <!-- 活动任务 -->
-    <ul class="active">
-        <template v-for="active in actives">
-            <li><span>设备: active.device</span><span>任务: {{ active.fun }}</span></li>
-        </template>
-    </ul>
+            <!-- 执行任务 -->
+            <div class="run">
+                <el-button type="success" @click="Run">执行任务</el-button>
+            </div>
+        </el-tab-pane>
+        <!-- 任务管理 -->
+        <el-tab-pane label="任务管理" name="third">
+            <!-- 正在执行的任务 -->
+            <ul class="active">
+                <el-table :data="actives" style="width: 100%">
+                    <el-table-column type="index" width="50">
+                    </el-table-column><!-- 序号 -->
+                    <el-table-column prop="device" label="设备">
+                    </el-table-column><!-- 设备 -->
+                    <el-table-column prop="fun" label="任务">
+                    </el-table-column><!-- 任务 -->
+                    <el-table-column prop="status" label="状态">
+                        <template slot-scope="scope">
+                            <el-tag
+                                    :type="scope.row.alive ? (scope.row.suspend ? 'danger' : 'success') : 'warning'"
+                                    disable-transitions>{{ scope.row.alive ? (scope.row.suspend ? '已暂停' : '运行中') : '已完成'
+                                }}
+                            </el-tag>
+                        </template>
+                    </el-table-column><!-- 状态 -->
+                    <el-table-column prop="alive" label="操作">
+                        <template slot-scope="scope">
+                            <template v-if="scope.row.alive">
+                                <el-button
+                                        v-if="scope.row.suspend"
+                                        size="mini"
+                                        type="success"
+                                        @click="wakeTask(scope.row.device)">唤醒
+                                </el-button>
+                                <el-button
+                                        v-else
+                                        size="mini"
+                                        type="warning"
+                                        @click="suspendTask(scope.row.device)">暂停
+                                </el-button>
+                                <el-button
+                                        size="mini"
+                                        type="danger"
+                                        @click="finishTask(scope.row.device)">结束
+                                </el-button>
+                            </template>
+                            <p v-else>无法操作</p>
+                        </template>
+                    </el-table-column><!-- 操作 -->
+                </el-table>
+            </ul>
+        </el-tab-pane>
+    </el-tabs>
 </div>
 <script>
     let app = new Vue({
         el: '#app',
         data: {
+            activeName: 'connect', // tab页
             showScreen: false, // 是否显示截图
             screenLink: undefined,// 截图图片url
             FUNS: null, // 功能详情
@@ -102,10 +226,11 @@
             // 获取设备
             this.getDevice();
             // 设置获取执行任务定时器
+            this.getActive();
             setInterval(() => {
                 console.log("定时获取运行的任务");
                 this.getActive();
-            }, 1000 * 60);
+            }, 1000 * 30);
         },
         methods: {
             // 返回设备
@@ -118,11 +243,11 @@
                         if (this.devices.length) {
                             this.device = this.devices[0][0];
                         } else {
-                            alert("未能获取到设备,请检查设备连接!")
+                            this.$message.error('未能获取到设备,请检查设备连接!');
                         }
                     } else {
                         this.devices = [];
-                        alert("设备获取失败");
+                        this.$message.error('设备获取失败');
                     }
                 });
             },
@@ -167,13 +292,16 @@
                 })
             },
             // 切换功能
-            changeFuns(e) {
-                let fun_active = e.target.value;
+            changeFuns(fun_active) {
                 console.log("切换功能至: ", fun_active);
                 let self = this;
                 this.FUNS.forEach(item => {
                     if (item.function === fun_active) {
                         this.kwargs = {};
+                        // 解决当从有参数的功能切换至另一个有参数的功能是会丢失一个参数
+                        for (let arg in item.args) {
+                            this.kwargs[arg] = undefined;
+                        }
                         self.argsItem = item;
                     }
                 });
@@ -195,12 +323,48 @@
                 axios.post("/run", data).then(response => {
                     let data = response.data;
                     if (!data.code) {
-                        alert("任务以执行");
+                        this.$message.success('任务以执行');
                         this.getActive();
                     } else if (data.code === 1001) {
-                        alert(data.msg);
+                        this.$message.error(data.msg || data.message);
                     }
                 })
+            },
+            // 暂停任务
+            suspendTask(device) {
+                axios.post("/suspend", {device: device}).then(response => {
+                    let data = response.data;
+                    if (!data.code) {
+                        this.$message.success('任务暂停成功');
+                        this.getActive()
+                    } else {
+                        this.$message.error(data.msg || data.message);
+                    }
+                });
+            },
+            // 唤醒任务
+            wakeTask(device) {
+                axios.post("/wake", {device: device}).then(response => {
+                    let data = response.data;
+                    if (!data.code) {
+                        this.$message.success('任务唤醒成功');
+                        this.getActive()
+                    } else {
+                        this.$message.error(data.msg || data.message);
+                    }
+                });
+            },
+            // 结束任务
+            finishTask(device) {
+                axios.post("/finish", {device: device}).then(response => {
+                    let data = response.data;
+                    if (!data.code) {
+                        this.$message.success('任务已结束');
+                        this.getActive()
+                    } else {
+                        this.$message.error(data.msg || data.message);
+                    }
+                });
             }
         }
     })
