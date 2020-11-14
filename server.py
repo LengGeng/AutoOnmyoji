@@ -102,10 +102,10 @@ def screen(option):
     """
     device = option['device']
     adb = Adb()
-    adb.set_device(device)
+    adb.set_device(device, "9999")
     adb.image_path = "./{}/screen".format(GUI_DIR)
     adb.screenshot()
-    filename = os.path.join('screen', 'screen_' + device + '.png')
+    filename = os.path.join('screen', 'screen_9999.png')
     return filename
 
 
@@ -123,7 +123,7 @@ def get_active():
 
 
 # 结束任务
-def finish(option):
+def finish_task(option):
     device = option['device']
     if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
         process: Process = ACTIVITY[device]["process"]
@@ -134,7 +134,7 @@ def finish(option):
 
 
 # 暂停任务
-def suspend(option):
+def suspend_task(option):
     device = option['device']
     if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
         process: Process = ACTIVITY[device]["process"]
@@ -148,7 +148,7 @@ def suspend(option):
 
 
 # 唤醒任务
-def wake(option):
+def wake_task(option):
     device = option['device']
     if device in ACTIVITY and ACTIVITY[device]["process"].is_alive():
         process: Process = ACTIVITY[device]["process"]
@@ -168,9 +168,9 @@ ROUTER = {
     "/screen": screen,  # 截图
     "/active": get_active,  # 活动任务
     "/fun": get_fun,  # 获取功能参数
-    "/finish": finish,  # 结束任务
-    "/suspend": suspend,  # 暂停任务
-    "/wake": wake,  # 唤醒任务
+    "/finish": finish_task,  # 结束任务
+    "/suspend": suspend_task,  # 暂停任务
+    "/wake": wake_task,  # 唤醒任务
 }
 
 

@@ -7,6 +7,7 @@
 from utils.adb import Adb
 from utils.mood import Mood
 from utils.match import Match
+from utils.FileUtils import replace_invalid_filename_char
 from utils import functions as fun
 from utils.logger import get_logger
 from stopit import threading_timeoutable
@@ -25,10 +26,12 @@ class BaseOnmyoji:
         self.adb = Adb()
         self.module = ""
         self.mood = Mood()
+        self.logger = None
 
     # 初始化Logger
     def init_logger(self):
-        LOG_DIR_NAME = os.path.join("log", self.adb.device.strip().split(" ")[-1])
+        valid_name = replace_invalid_filename_char(self.adb.device.strip().split(" ")[-1])
+        LOG_DIR_NAME = os.path.join("log", valid_name)
         if not os.path.exists(LOG_DIR_NAME):
             os.makedirs(LOG_DIR_NAME)
         LOG_FILENAME = os.path.join(LOG_DIR_NAME, time.strftime("LOG_%Y%m%d.log", time.localtime()))
@@ -61,7 +64,7 @@ class BaseOnmyoji:
             return os.path.join(self.module, filename)
         pass
 
-    # 匹配图像
+    # 匹配图像目标
     def match(self, template, module=None):
         """
         当前设备图片识别
@@ -73,6 +76,7 @@ class BaseOnmyoji:
             template = self.get_img(self.get_module_path(template, module))
         return Match.match(self.adb.screen, template)
 
+    # 匹配多个图像目标
     def matchs(self, *args):
         """同时匹配多个图片
         self.match的加强版,同时匹配多个普片
@@ -81,7 +85,7 @@ class BaseOnmyoji:
         """
         return any(self.match(*arg) for arg in args)
 
-    # 匹配图像坐标
+    # 匹配图像并点击坐标
     def match_touch(self, template, module=None):
         """
         匹配并点击图像在设备截图中的随机点
@@ -95,6 +99,7 @@ class BaseOnmyoji:
         if pos_list:
             pos = fun.get_random_pos(*pos_list[0])
             if pos:
+                self.logger.info(f"点击屏幕:{pos}")
                 self.adb.click(pos)
                 return True
         return False
@@ -108,6 +113,7 @@ class BaseOnmyoji:
         # 等待结束
         while True:
             end_sign = None  # 结算成功标志
+            self.mood.mood_sleep()  # 随机等待
             self.adb.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while self.matchs(
@@ -134,9 +140,8 @@ class BaseOnmyoji:
                 pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
                 self.logger.info(f"点击屏幕:{pos}")
                 self.adb.click(pos)
-                self.mood.mood_sleep()  # 随机等待
+                fun.random_time(0.5, 0.8)  # 随机等待
                 self.adb.screenshot()  # 截图
-            self.mood.mood_sleep()  # 随机等待
             if end_sign is not None:  # 结算后跳出结算循环
                 self.logger.info("结算成功")
                 return end_sign
@@ -151,6 +156,7 @@ class BaseOnmyoji:
         """
         try:
             ready_sign = False
+            fun.random_time(1, 1.5)
             while True:
                 self.adb.screenshot()  # 截图
                 while self.match("准备.png", "公共"):

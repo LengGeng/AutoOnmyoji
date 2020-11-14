@@ -11,6 +11,7 @@ import random
 from subprocess import DEVNULL
 from subprocess import PIPE
 from subprocess import Popen
+from utils.FileUtils import replace_invalid_filename_char
 
 __all__ = ['Adb']
 
@@ -87,9 +88,11 @@ class Adb:
             print('未能获取到设备,请检查设备连接!')
             return False
 
-    def set_device(self, device):
-        self.device_id = device
+    def set_device(self, device, device_id=None):
         self.device = '-s {} '.format(device)
+        if device_id is None:
+            device_id = device
+        self.device_id = replace_invalid_filename_char(str(device_id))
 
     def screenshot(self):
         """
