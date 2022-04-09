@@ -83,7 +83,7 @@ class Adb:
                 else:
                     print('您选择的设备是：\t', self.devices_list[order][0])
                     self.set_device(self.devices_list[order][0])
-                    break
+                    return True
         else:
             print('未能获取到设备,请检查设备连接!')
             return False
