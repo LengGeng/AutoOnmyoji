@@ -216,6 +216,15 @@ class Adb:
         event = "&&".join(event_list[:len(event_list)])
         os.system(event)
 
+    def vibrate(self, s=500):
+        """
+        模拟设备震动
+        :param s: 震动时长
+        :return:
+        """
+        command = 'adb {}shell cmd vibrator vibrate {}'.format(self.device, s)
+        os.system(command)
+
 
 def _test():
     adb = Adb()
