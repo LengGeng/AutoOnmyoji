@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional, List
 
 from drive.utils import *
 from drive.Driver import Driver
@@ -7,7 +7,7 @@ from drive.AdbDriver import AdbDriver
 DRIVER_ACTIVE = []
 
 
-def choose_driver(drivers: List[Driver]) -> Driver:
+def choose_driver(drivers: List[Driver]) -> Optional[Driver]:
     """
     从设备列表中选择一个设备进行使用，已经使用的设备无法再次使用
     :param drivers: 设备列表
@@ -16,11 +16,13 @@ def choose_driver(drivers: List[Driver]) -> Driver:
     # 判断是否存在可用设备
     if len(drivers) == 0:
         print("当前无可用设备")
+        return
     # 筛选可用设备
     drivers = [driver for driver in drivers if driver.serial not in DRIVER_ACTIVE]
     # 再次判断是否存在可用设备
     if len(drivers) == 0:
         print("当前设备均已被使用")
+        return
 
     print('{:<3}{:<}'.format('序号', '设备编号'))
     for i, driver in enumerate(drivers):
