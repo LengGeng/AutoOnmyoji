@@ -9,7 +9,7 @@ from drive import Driver, Pos, Scope
 from settings import SCREEN_PATH
 
 
-class AdbDrive(Driver):
+class AdbDriver(Driver):
 
     def __init__(self, serial: str):
         self.device = adbutils.adb.device(serial)
@@ -53,7 +53,7 @@ class AdbDrive(Driver):
 
 
 if __name__ == '__main__':
-    adb_drive = AdbDrive("emulator-5560")
+    adb_drive = AdbDriver("emulator-5560")
     print(adb_drive.displays)
     # cv2.imshow("Image", adb_drive.screen)
     # cv2.waitKey(0)

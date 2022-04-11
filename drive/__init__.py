@@ -2,6 +2,8 @@ from typing import NewType, TypeVar, Optional, Tuple
 
 import numpy as np
 
+from .AdbDriver import AdbDriver
+
 Screen = NewType("Screen", np.ndarray)
 
 
@@ -131,3 +133,4 @@ def _test():
 
 if __name__ == '__main__':
     _test()
+    AdbDriver()
