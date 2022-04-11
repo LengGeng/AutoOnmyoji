@@ -4,7 +4,7 @@
 # 开发时间  :   2019/9/26 16:21
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
-from utils.adb import Adb
+from drive import AdbDriver, Scope, choose_driver, Driver
 from utils.mood import Mood
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
@@ -22,15 +22,15 @@ class BaseOnmyoji:
     image_path = "images"  # 模板图片路径
     images = dict()  # 模板图片集
 
-    def __init__(self):
-        self.driver = Adb()
+    def __init__(self, driver: Driver):
+        self.driver = driver
         self.module = ""
         self.mood = Mood()
         self.logger = None
 
     # 初始化Logger
     def init_logger(self):
-        valid_name = replace_invalid_filename_char(self.driver.device.strip().split(" ")[-1])
+        valid_name = replace_invalid_filename_char(self.driver.serial)
         LOG_DIR_NAME = os.path.join("log", valid_name)
         if not os.path.exists(LOG_DIR_NAME):
             os.makedirs(LOG_DIR_NAME)
@@ -442,7 +442,8 @@ class Onmyoji(BaseOnmyoji):
                         self.logger.warning("无效的坐标")
                 # 遍历完后滑动列表
                 else:
-                    self.driver.slide_event(1200, 875, dc="u", distance=700)
+                    # self.driver.slide_event(1200, 875, dc="u", distance=700)
+                    self.driver.swipe(Scope((1200, 875), (1200, 175)), 200)
                     self.mood.mood_sleep()
             else:
                 self.logger.warning("未获取到结界目标")
@@ -570,10 +571,11 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("测试函数执行结束")
 
 
+# noinspection PyTypeChecker
 def _test():
-    onmyoji = Onmyoji()
-    connect = onmyoji.driver.connect_device()
-    if connect:
+    driver = choose_driver(AdbDriver.driver_list())
+    if driver:
+        onmyoji = Onmyoji(AdbDriver(driver.serial))
         onmyoji.init_logger()
         # onmyoji.zudui(1234)
         onmyoji.combat(500)
