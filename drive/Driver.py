@@ -2,7 +2,7 @@ from typing import NewType, Optional, Tuple
 
 from numpy import ndarray
 
-from drive.utils import Pos, Scope
+from drive.utils import Pos, AnyPos, Scope
 
 Screen = NewType("Screen", ndarray)
 
@@ -38,7 +38,7 @@ class Driver:
         """
         pass
 
-    def click(self, pos: Pos) -> None:
+    def click(self, pos: AnyPos) -> None:
         """
         点击
         :param pos: 点击的坐标

@@ -5,7 +5,7 @@ from typing import List
 import cv2
 import adbutils
 
-from drive import Driver, Pos, Scope
+from drive import Driver, Pos, AnyPos, Scope
 from settings import SCREEN_PATH
 
 
@@ -44,7 +44,9 @@ class AdbDriver(Driver):
         img_rgb = cv2.imread(screen_filepath)
         self._screen = img_rgb
 
-    def click(self, pos: Pos) -> None:
+    def click(self, pos: AnyPos) -> None:
+        if not isinstance(pos, Pos):
+            pos = Pos(*pos)
         self.device.shell(f"input tap {pos.x} {pos.y}")
 
     def swipe(self, scope: Scope, duration: int) -> None:
