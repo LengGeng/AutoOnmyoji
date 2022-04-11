@@ -8,7 +8,7 @@ from multiprocessing import freeze_support
 def OnmyojiRun(device, fun, *args, **kwargs):
     try:
         onmyoji = Onmyoji()
-        onmyoji.adb.set_device(device)
+        onmyoji.driver.set_device(device)
         onmyoji.init_logger()
         if hasattr(onmyoji, fun):
             function = getattr(onmyoji, fun)

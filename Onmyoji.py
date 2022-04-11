@@ -23,14 +23,14 @@ class BaseOnmyoji:
     images = dict()  # 模板图片集
 
     def __init__(self):
-        self.adb = Adb()
+        self.driver = Adb()
         self.module = ""
         self.mood = Mood()
         self.logger = None
 
     # 初始化Logger
     def init_logger(self):
-        valid_name = replace_invalid_filename_char(self.adb.device.strip().split(" ")[-1])
+        valid_name = replace_invalid_filename_char(self.driver.device.strip().split(" ")[-1])
         LOG_DIR_NAME = os.path.join("log", valid_name)
         if not os.path.exists(LOG_DIR_NAME):
             os.makedirs(LOG_DIR_NAME)
@@ -74,7 +74,7 @@ class BaseOnmyoji:
         """
         if type(template) == str:
             template = self.get_img(self.get_module_path(template, module))
-        return Match.match(self.adb.screen, template)
+        return Match.match(self.driver.screen, template)
 
     # 匹配多个图像目标
     def matchs(self, *args):
@@ -95,12 +95,12 @@ class BaseOnmyoji:
         """
         if type(template) == str:
             template = self.get_img(self.get_module_path(template, module))
-        pos_list = Match.get_match_pos(self.adb.screen, template, self.threshold)
+        pos_list = Match.get_match_pos(self.driver.screen, template, self.threshold)
         if pos_list:
             pos = fun.get_random_pos(*pos_list[0])
             if pos:
                 self.logger.info(f"点击屏幕:{pos}")
-                self.adb.click(pos)
+                self.driver.click(pos)
                 return True
         return False
 
@@ -114,7 +114,7 @@ class BaseOnmyoji:
         while True:
             end_sign = None  # 结算成功标志
             self.mood.mood_sleep()  # 随机等待
-            self.adb.screenshot()  # 截图
+            self.driver.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while self.matchs(
                     ("战斗胜利.png", "公共"),
@@ -137,11 +137,11 @@ class BaseOnmyoji:
                     [[0.625, 0.9], [0.8, 0.98]],
                     [[0.93, 0.33], [0.98, 0.66]],
                 ]
-                pos = fun.get_random_pos(*Match.get_ratio_pos(self.adb.screen, *fun.choice(end_regions)))
+                pos = fun.get_random_pos(*Match.get_ratio_pos(self.driver.screen, *fun.choice(end_regions)))
                 self.logger.info(f"点击屏幕:{pos}")
-                self.adb.click(pos)
+                self.driver.click(pos)
                 fun.random_time(0.5, 0.8)  # 随机等待
-                self.adb.screenshot()  # 截图
+                self.driver.screenshot()  # 截图
             if end_sign is not None:  # 结算后跳出结算循环
                 self.logger.info("结算成功")
                 return end_sign
@@ -158,9 +158,9 @@ class BaseOnmyoji:
             ready_sign = False
             fun.random_time(1, 1.5)
             while True:
-                self.adb.screenshot()  # 截图
+                self.driver.screenshot()  # 截图
                 while self.match("准备.png", "公共"):
-                    self.adb.screenshot()  # 截图
+                    self.driver.screenshot()  # 截图
                     self.match_touch("准备.png", "公共")
                     ready_sign = True
                 if ready_sign:
@@ -201,7 +201,7 @@ class BaseOnmyoji:
         正常挑战,循环点击挑战与结束
         :return:
         """
-        self.adb.screenshot()
+        self.driver.screenshot()
         if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
             self.logger.info("开始挑战")
             self._ready_(timeout=8)
@@ -290,19 +290,19 @@ class Onmyoji(BaseOnmyoji):
         options = {"贪": int(tan), "嗔": int(zen), "痴": int(chi)}
         for category in option:
             self.logger.info("%s\t%s" % (category, options[category]))
-        self.adb.screenshot()
+        self.driver.screenshot()
         # 进入业原火界面
         for i in range(5):
             if self.match_touch("探索.png", "主页"):
                 self.logger.info("进入探索页面")
                 self.mood.mood_sleep()
-                self.adb.screenshot()
+                self.driver.screenshot()
                 if self.match_touch("御魂.png", "公共"):
                     self.logger.info("进入御魂页面")
                     self.mood.mood_sleep()
-                    pos = Match.get_ratio_pos(self.adb.screen, [0.6, 0.3], [0.8, .75])
+                    pos = Match.get_ratio_pos(self.driver.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
-                    self.adb.click(pos)
+                    self.driver.click(pos)
                     self.logger.info("进入业原火页面")
                     break
         # 检查是否锁定阵容
@@ -332,7 +332,7 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("目标：{}次".format(count))
         i = 0
         while i < int(count):
-            self.adb.screenshot()
+            self.driver.screenshot()
             if self._locking_():
                 if self.match("组队开始标志.png"):
                     if self.match_touch("挑战.png"):
@@ -362,7 +362,7 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("目标：{}次".format(count))
         i = 0
         while i < int(count):
-            self.adb.screenshot()
+            self.driver.screenshot()
             if accept:
                 if self._accept_invite_(timeout=8):
                     accept = False
@@ -383,32 +383,32 @@ class Onmyoji(BaseOnmyoji):
         jiejie_object_width = 455
         jiejie_object_height = 160
         while True:
-            self.adb.screenshot()
+            self.driver.screenshot()
             # 检查是否在结界界面
             if not (self.match("突破标志.png") or self.match("突破标志.png")):
                 self.logger.warning("当前不在结界界面")
                 if self.match_touch("结界突破.png", "公共"):
                     self.logger.info("已自动进入结界突破界面")
-                    self.adb.screenshot()
+                    self.driver.screenshot()
                 else:
                     self.logger.error("无法进入结界突破界面,任务停止")
                     break
             # 匹配目标
-            screen = self.adb.screen
-            self.adb.threshold = 0.98
+            screen = self.driver.screen
+            self.driver.threshold = 0.98
             # 判断当前次数
             if self.match("寮次数.png"):
                 self.logger.warning("突破次数不足")
                 # 等待15-20分钟
                 fun.random_time(15 * 60, 20 * 60)
-            self.adb.threshold = 0.9
+            self.driver.threshold = 0.9
             self.logger.info("获取结界目标")
-            pos_list = Match.get_match_pos(self.adb.screen, self.get_img("突破对象标志.png"), 0.92)
+            pos_list = Match.get_match_pos(self.driver.screen, self.get_img("突破对象标志.png"), 0.92)
             if pos_list:
                 self.logger.info("获取到{}个结界目标".format(len(pos_list)))
                 # 开始遍历结界目标
                 for pos in pos_list:
-                    self.adb.screenshot()
+                    self.driver.screenshot()
                     if not self.match_touch("宝箱.png", "公共"):
                         self.match_touch("宝箱2.png", "公共")
                     pos_begin = (pos[1][0] - jiejie_object_width, pos[1][1] - jiejie_object_height)
@@ -424,12 +424,12 @@ class Onmyoji(BaseOnmyoji):
                             self.logger.info("目标状态：击破")
                         else:
                             self.logger.info("目标状态：未突破")
-                            self.adb.click(fun.get_random_pos(*pos))  # ####
+                            self.driver.click(fun.get_random_pos(*pos))  # ####
                             self.mood.mood_sleep()
-                            self.adb.screenshot()
+                            self.driver.screenshot()
                             if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
-                                self.adb.screenshot()
+                                self.driver.screenshot()
                                 if self._end_():
                                     self.logger.info("突破成功")
                                     self.mood.mood_sleep()
@@ -442,7 +442,7 @@ class Onmyoji(BaseOnmyoji):
                         self.logger.warning("无效的坐标")
                 # 遍历完后滑动列表
                 else:
-                    self.adb.slide_event(1200, 875, dc="u", distance=700)
+                    self.driver.slide_event(1200, 875, dc="u", distance=700)
                     self.mood.mood_sleep()
             else:
                 self.logger.warning("未获取到结界目标")
@@ -455,17 +455,17 @@ class Onmyoji(BaseOnmyoji):
         """
         self.module = "万事屋/"
         # 进入万事屋
-        self.adb.screenshot()
+        self.driver.screenshot()
         self.logger.info("尝试进入万事屋")
         self.match_touch("进入万事屋.png")
         self.mood.mood_sleep()
-        self.adb.screenshot()
+        self.driver.screenshot()
         self.logger.info("尝试进入事件")
         self.match_touch("进入事件.png")
         self.mood.mood_sleep()
         # 自动领取奖励主循环
         while True:
-            self.adb.screenshot()
+            self.driver.screenshot()
             # 异常检查
             self._check_()
             # 检测突发状况Buff
@@ -477,13 +477,13 @@ class Onmyoji(BaseOnmyoji):
                 self.match_touch(fun.choice(["事件_一键领取.png"]))
             # 领取循环
             self.mood.mood_sleep()
-            self.adb.screenshot()
+            self.driver.screenshot()
             if self.match_touch("事件_一键领取.png"):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
                     self.mood.mood_sleep()
-                    self.adb.screenshot()
+                    self.driver.screenshot()
                     if self.match("事件_奖励.png"):
                         self.match_touch(fun.choice(["事件_一键领取.png"]))
                         self.logger.info("成功领取奖励")
@@ -512,10 +512,10 @@ class Onmyoji(BaseOnmyoji):
         kyLin = ["火麒麟.png", "风麒麟.png", "水麒麟.png", "雷麒麟.png"]
         self.logger.info("任务: 超鬼王")
         while count < 100:
-            self.adb.screenshot()  # 截图
+            self.driver.screenshot()  # 截图
             self.match_touch("觉醒.png", "公共")  # 匹配点击图片
             self.mood.mood_sleep()  # 随机等待
-            self.adb.screenshot()  # 截图
+            self.driver.screenshot()  # 截图
             self.match_touch(fun.choice(kyLin))  # 选择列表中随机一个进行点击
             if self._locking_():
                 self.logger.info("当前阵容已处于锁定状态")
@@ -524,7 +524,7 @@ class Onmyoji(BaseOnmyoji):
                 self.logger.info("进入循环挑战觉醒阶段")
                 while True:
                     self.mood.mood_sleep()  # 随机等待
-                    self.adb.screenshot()  # 截图
+                    self.driver.screenshot()  # 截图
                     if self.match_touch("发现超鬼王.png"):
                         self.match_touch("发现超鬼王.png")
                         self.logger.info("发现超鬼王")
@@ -540,10 +540,10 @@ class Onmyoji(BaseOnmyoji):
                 self.logger.info("进入超鬼王阶段")
                 while True:
                     self.mood.mood_sleep()  # 随机等待
-                    self.adb.screenshot()  # 截图
+                    self.driver.screenshot()  # 截图
                     while True:
                         self.mood.mood_sleep()  # 随机等待
-                        self.adb.screenshot()  # 截图
+                        self.driver.screenshot()  # 截图
                         if not self.match_touch("挑战.png"):
                             break
                         self.logger.info("开始挑战超鬼王")
@@ -572,7 +572,7 @@ class Onmyoji(BaseOnmyoji):
 
 def _test():
     onmyoji = Onmyoji()
-    connect = onmyoji.adb.connect_device()
+    connect = onmyoji.driver.connect_device()
     if connect:
         onmyoji.init_logger()
         # onmyoji.zudui(1234)
