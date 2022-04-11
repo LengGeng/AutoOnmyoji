@@ -18,7 +18,7 @@ class Driver:
         :param serial: 设备标识，设备的唯一ID
         """
         self._serial: str = serial
-        self._screen: Optional[Scope] = None  # 屏幕截图
+        self._screen: Optional[Screen] = None  # 屏幕截图
         self.width: int = 0  # 设备宽度
         self.height: int = 0  # 设备高度
         # 进行初始化
