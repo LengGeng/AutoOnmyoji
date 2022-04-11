@@ -5,7 +5,7 @@ from typing import List
 import cv2
 import adbutils
 
-from drive import Driver, Pos, AnyPos, Scope
+from drive import Driver, Pos, AnyPos, Scope, AnyScope
 from settings import SCREEN_PATH
 
 
@@ -49,7 +49,9 @@ class AdbDriver(Driver):
             pos = Pos(*pos)
         self.device.shell(f"input tap {pos.x} {pos.y}")
 
-    def swipe(self, scope: Scope, duration: int) -> None:
+    def swipe(self, scope: AnyScope, duration: int) -> None:
+        if not isinstance(scope, Scope):
+            scope = Scope(*scope)
         s, e = scope.s, scope.e
         self.device.shell(f"input swipe {s.x} {s.y} {e.x} {e.y} {duration}")
 

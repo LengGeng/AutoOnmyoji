@@ -2,7 +2,7 @@ from typing import NewType, Optional, Tuple
 
 from numpy import ndarray
 
-from drive.utils import Pos, AnyPos, Scope
+from drive.utils import AnyPos, AnyScope
 
 Screen = NewType("Screen", ndarray)
 
@@ -46,7 +46,7 @@ class Driver:
         """
         pass
 
-    def swipe(self, scope: Scope, duration: int) -> None:
+    def swipe(self, scope: AnyScope, duration: int) -> None:
         """
         滑动
         :param scope: 滑动的范围，从坐标1滑动到坐标2

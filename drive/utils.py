@@ -1,6 +1,6 @@
 from typing import TypeVar, Tuple
 
-__all__ = ["Pos", "AnyPos", "Scope"]
+__all__ = ["Pos", "AnyPos", "TuplePos", "Scope", "AnyScope", "TupleScope"]
 
 
 class Pos:
@@ -12,7 +12,8 @@ class Pos:
         return f"Pos({self.x}, {self.y})"
 
 
-AnyPos = TypeVar("AnyPos", Pos, Tuple[float, float])
+TuplePos = Tuple[float, float]
+AnyPos = TypeVar("AnyPos", Pos, TuplePos)
 
 
 class Scope:
@@ -28,6 +29,16 @@ class Scope:
         return f"Scope(({self.s.x}, {self.s.y}), ({self.e.x}, {self.e.y}))"
 
 
+TupleScope = Tuple[TuplePos, TuplePos]
+AnyScope = TypeVar("AnyScope", Scope, Tuple[Pos, Pos], TupleScope)
+
+
+def _test_any_scope(scope: AnyScope):
+    if not isinstance(scope, Scope):
+        scope = Scope(*scope)
+    print(scope)
+
+
 def _test_pos():
     pos1 = Pos(x=123, y=456)
     pos2 = Pos(x=147, y=258)
@@ -37,6 +48,9 @@ def _test_pos():
     print(f"{scope1}")
     scope2 = Scope((100, 120), (200, 240))
     print(f"{scope2}")
+    _test_any_scope(scope2)
+    _test_any_scope((Pos(100, 100), Pos(1000, 2000)))
+    _test_any_scope(((100, 100), (1000, 2000)))
 
 
 if __name__ == '__main__':
