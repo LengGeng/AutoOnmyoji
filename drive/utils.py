@@ -17,6 +17,10 @@ AnyPos = TypeVar("AnyPos", Pos, Tuple[float, float])
 
 class Scope:
     def __init__(self, s: AnyPos, e: AnyPos):
+        if not isinstance(s, Pos):
+            s = Pos(*s)
+        if not isinstance(e, Pos):
+            e = Pos(*e)
         self.s = s
         self.e = e
 
@@ -29,5 +33,11 @@ def _test_pos():
     pos2 = Pos(x=147, y=258)
     print(f"{pos1}")
     print(f"{pos2}")
-    scope = Scope(pos1, pos2)
-    print(f"{scope}")
+    scope1 = Scope(pos1, pos2)
+    print(f"{scope1}")
+    scope2 = Scope((100, 120), (200, 240))
+    print(f"{scope2}")
+
+
+if __name__ == '__main__':
+    _test_pos()
