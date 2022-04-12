@@ -1,10 +1,9 @@
-from typing import NewType, Optional, Tuple
-
-from numpy import ndarray
+from typing import Optional, Tuple
 
 from drive.utils import AnyPos, AnyScope
+from utils.imageUtils import CvImage
 
-Screen = NewType("Screen", ndarray)
+Screen = CvImage
 
 
 class Driver:
