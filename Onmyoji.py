@@ -26,17 +26,13 @@ class BaseOnmyoji:
         self.driver = driver
         self.module = ""
         self.mood = Mood()
-        self.logger = None
+        self._init_log_()
 
     # 初始化Logger
-    def init_logger(self):
-        valid_name = replace_invalid_filename_char(self.driver.serial)
-        LOG_DIR_NAME = os.path.join("log", valid_name)
-        if not os.path.exists(LOG_DIR_NAME):
-            os.makedirs(LOG_DIR_NAME)
-        LOG_FILENAME = os.path.join(LOG_DIR_NAME, time.strftime("LOG_%Y%m%d.log", time.localtime()))
-        self.logger = get_logger(LOG_FILENAME)
-        self.logger.info("*" * 15 + "启动" + "*" * 15)
+    def _init_log_(self):
+        log_path = os.path.join(self.driver.log_dir, "script.log")
+        self.logger = get_logger(log_path)
+        self.logger.info("*" * 15 + "Script Start" + "*" * 15)
 
     # 获取图片对象
     def get_img(self, filename):
@@ -576,7 +572,6 @@ def _test():
     driver = choose_driver(MiniDriver.driver_list())
     if driver:
         onmyoji = Onmyoji(MiniDriver(driver.serial))
-        onmyoji.init_logger()
         # onmyoji.zudui(1234)
         onmyoji.combat(500)
         # onmyoji.yeyuanhuo(12, 34, 56)

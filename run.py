@@ -8,7 +8,6 @@ from multiprocessing import freeze_support
 def OnmyojiRun(serial, fun, *args, **kwargs):
     try:
         onmyoji = Onmyoji(MiniDriver(serial))
-        onmyoji.init_logger()
         if hasattr(onmyoji, fun):
             function = getattr(onmyoji, fun)
             function(*args, **kwargs)
