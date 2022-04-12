@@ -18,6 +18,8 @@ class AdbDriver(Driver):
 
     def _init_(self):
         self._init_window_size_()
+
+    def _start_(self):
         self.screenshot()
 
     def _init_window_size_(self):
