@@ -4,7 +4,7 @@
 # 开发时间  :   2019/9/26 16:21
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
-from drive import AdbDriver, Scope, choose_driver, Driver
+from drive import MiniDriver, Scope, choose_driver, Driver
 from utils.mood import Mood
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
@@ -573,9 +573,9 @@ class Onmyoji(BaseOnmyoji):
 
 # noinspection PyTypeChecker
 def _test():
-    driver = choose_driver(AdbDriver.driver_list())
+    driver = choose_driver(MiniDriver.driver_list())
     if driver:
-        onmyoji = Onmyoji(AdbDriver(driver.serial))
+        onmyoji = Onmyoji(MiniDriver(driver.serial))
         onmyoji.init_logger()
         # onmyoji.zudui(1234)
         onmyoji.combat(500)
