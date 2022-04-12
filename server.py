@@ -9,11 +9,13 @@ import json
 import psutil
 import os.path
 import urllib.parse
+
+from drive import MiniDriver
 from utils.adb import Adb
 from multiprocessing import Process
 from webbrowser import open as webopen
 from multiprocessing import freeze_support
-from run import OnmyojiRun, get_devices, get_fun
+from run import OnmyojiRun, get_fun
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 GUI_DIR = 'webgui'
@@ -159,6 +161,10 @@ def wake_task(option):
             return {"data": "success"}
     else:
         return {"code": 500, "mag": "当前设备没有正在执行的任务"}
+
+
+def get_devices():
+    return [[device.serial, "device"] for device in MiniDriver.driver_list()]
 
 
 # 路由表
