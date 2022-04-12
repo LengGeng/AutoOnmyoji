@@ -6,7 +6,7 @@ def get_logger(filename="log.log"):
     # [时间] [文件名 - 函数名 - 行号] [日志级别] [错误信息]
     DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
     handlerFormatter = logging.Formatter(
-        '%(levelname)s %(asctime)s %(filename)s-%(funcName)s-%(lineno)d %(message)s', datefmt=DATE_FORMAT
+        '%(levelname)s %(asctime)s %(filename)s[%(lineno)d]<%(funcName)s> %(message)s', datefmt=DATE_FORMAT
     )
     consoleFormat = logging.Formatter('%(asctime)s\t\t%(message)s', datefmt=DATE_FORMAT)
 

@@ -6,7 +6,9 @@ import cv2
 import adbutils
 
 from drive import Driver, Pos, AnyPos, Scope, AnyScope
-from settings import SCREEN_PATH
+from settings import SCREEN_PATH, LOG_PATH, DATE
+from utils.FileUtils import replace_invalid_filename_char, check_dirs
+from utils.logger import get_logger
 
 
 class AdbDriver(Driver):
@@ -17,16 +19,26 @@ class AdbDriver(Driver):
         super().__init__(serial)
 
     def _init_(self):
+        self._init_log_()
         self._init_window_size_()
 
     def _start_(self):
+        self.logger.info("driver start")
         self.screenshot()
+
+    def _init_log_(self):
+        self.log_dir = os.path.join(LOG_PATH, replace_invalid_filename_char(self._serial), str(DATE))
+        check_dirs(self.log_dir)
+        log_file_path = os.path.join(self.log_dir, "driver.log")
+        self.logger = get_logger(log_file_path)
+        self.logger.debug("driver init log")
 
     def _init_window_size_(self):
         # noinspection PyProtectedMember
         w, h = self.device._raw_window_size()
         rotation = self.device.rotation()
         self.width, self.height = (w, h) if rotation % 2 == 0 else (h, w)
+        self.logger.debug(f"driver init WindowSize({self.displays})")
 
     @staticmethod
     def driver_list() -> List[adbutils.AdbDevice]:
@@ -37,6 +49,7 @@ class AdbDriver(Driver):
         return adbutils.adb.device_list()
 
     def screenshot(self) -> None:
+        self.logger.debug(f"driver screenshot start")
         screen_filename = f"{self._serial}.png"
         screen_filepath = os.path.normpath(os.path.join(SCREEN_PATH, screen_filename))
         screencap_cmd = f"adb -s {self._serial} shell screencap -p /sdcard/{screen_filename}"
@@ -45,17 +58,20 @@ class AdbDriver(Driver):
         Popen(screencap_cmd + '&&' + pull_cmd, shell=True, stdout=PIPE, stderr=DEVNULL, bufsize=-1).wait()
         img_rgb = cv2.imread(screen_filepath)
         self._screen = img_rgb
+        self.logger.debug(f"driver screenshot finish")
 
     def click(self, pos: AnyPos) -> None:
         if not isinstance(pos, Pos):
             pos = Pos(*pos)
         self.device.shell(f"input tap {pos.x} {pos.y}")
+        self.logger.debug(f"driver click at ({pos.x}, {pos.y})")
 
     def swipe(self, scope: AnyScope, duration: int) -> None:
         if not isinstance(scope, Scope):
             scope = Scope(*scope)
         s, e = scope.s, scope.e
         self.device.shell(f"input swipe {s.x} {s.y} {e.x} {e.y} {duration}")
+        self.logger.debug(f"driver swipe {duration}ms from ({s.x}, {s.y}) to ({e.x}, {e.y})")
 
 
 if __name__ == '__main__':
