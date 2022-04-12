@@ -35,7 +35,7 @@ class Run:
                 break
             config = self.get_config(driver.serial)
             configs.append(config)
-            if (not self.devices) or input('是否还要添加设备(1 添加/其他 不添加)') != '1':
+            if input('是否还要添加设备(1 添加/其他 不添加)') != '1':
                 break
         if not configs:
             exit('未能获取到设备,请检查设备连接!')
