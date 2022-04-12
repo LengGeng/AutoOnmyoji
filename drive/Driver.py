@@ -23,10 +23,18 @@ class Driver:
         self.height: int = 0  # 设备高度
         # 进行初始化
         self._init_()
+        self._start_()
 
     def _init_(self):
         """
         初始化函数
+        :return:
+        """
+        pass
+
+    def _start_(self):
+        """
+        开始函数
         :return:
         """
         pass
