@@ -1,7 +1,11 @@
+import os.path
 from typing import Optional, Tuple
 
 from drive.utils import AnyPos, AnyScope
+from settings import LOG_PATH, DATE
+from utils.FileUtils import replace_invalid_filename_char, check_dirs
 from utils.imageUtils import CvImage
+from utils.logger import get_logger
 
 Screen = CvImage
 
@@ -29,7 +33,15 @@ class Driver:
         初始化函数
         :return:
         """
+        self._init_log_()
         pass
+
+    def _init_log_(self):
+        self.log_dir = os.path.join(LOG_PATH, replace_invalid_filename_char(self._serial), str(DATE))
+        check_dirs(self.log_dir)
+        log_file_path = os.path.join(self.log_dir, "driver.log")
+        self.logger = get_logger(log_file_path)
+        self.logger.debug("driver init log")
 
     def _start_(self):
         """

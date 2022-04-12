@@ -6,9 +6,7 @@ import cv2
 import adbutils
 
 from drive import Driver, Pos, AnyPos, Scope, AnyScope
-from settings import SCREEN_PATH, LOG_PATH, DATE
-from utils.FileUtils import replace_invalid_filename_char, check_dirs
-from utils.logger import get_logger
+from settings import SCREEN_PATH
 
 
 class AdbDriver(Driver):
@@ -19,19 +17,12 @@ class AdbDriver(Driver):
         super().__init__(serial)
 
     def _init_(self):
-        self._init_log_()
+        super(AdbDriver, self)._init_()
         self._init_window_size_()
 
     def _start_(self):
         self.logger.info("driver start")
         self.screenshot()
-
-    def _init_log_(self):
-        self.log_dir = os.path.join(LOG_PATH, replace_invalid_filename_char(self._serial), str(DATE))
-        check_dirs(self.log_dir)
-        log_file_path = os.path.join(self.log_dir, "driver.log")
-        self.logger = get_logger(log_file_path)
-        self.logger.debug("driver init log")
 
     def _init_window_size_(self):
         # noinspection PyProtectedMember
