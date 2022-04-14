@@ -28,6 +28,14 @@ class Scope:
     def __repr__(self):
         return f"Scope(({self.s.x}, {self.s.y}), ({self.e.x}, {self.e.y}))"
 
+    @property
+    def width(self) -> float:
+        return abs(self.e.x - self.s.x)
+
+    @property
+    def height(self) -> float:
+        return abs(self.e.y - self.s.y)
+
 
 TupleScope = Tuple[TuplePos, TuplePos]
 AnyScope = TypeVar("AnyScope", Scope, Tuple[Pos, Pos], TupleScope)
