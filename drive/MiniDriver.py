@@ -52,7 +52,7 @@ class MiniDriver(AdbDriver):
         # 更改目录权限以执行
         self.device.shell("chmod 777 /data/local/tmp/*")
         # 执行
-        start_minicap_server_cmd = f"adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P {self.displays}@{self.displays}/0"
+        start_minicap_server_cmd = f"adb -s {self._serial} shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P {self.displays}@{self.displays}/0"
         self.logger.debug(f"start_minicap_server_cmd:{start_minicap_server_cmd}")
         # 日志
         minicap_log_path = os.path.join(self.log_dir, "minicap.log")
