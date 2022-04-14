@@ -130,8 +130,8 @@ class BaseOnmyoji:
                     self.logger.info("检测到战斗失败")
                     end_sign = False
                 end_regions = [
-                    [[0.625, 0.9], [0.8, 0.98]],
-                    [[0.93, 0.33], [0.98, 0.66]],
+                    [[0.3515, 0.8981], [0.5208, 0.8981]],
+                    [[0.7994, 0.5879], [0.7994, 0.7731]],
                 ]
                 pos = fun.get_random_pos(*Match.get_ratio_pos(self.driver.screen, *fun.choice(end_regions)))
                 self.logger.info(f"点击屏幕:{pos}")
