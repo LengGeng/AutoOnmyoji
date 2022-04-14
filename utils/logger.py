@@ -10,7 +10,7 @@ def get_logger(filename="log.log"):
     )
     consoleFormat = logging.Formatter('%(asctime)s\t\t%(message)s', datefmt=DATE_FORMAT)
 
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(filename)
     logger.setLevel(level=logging.DEBUG)
 
     # 文件日志输出
