@@ -16,6 +16,17 @@ def read_image(filepath: str) -> CvImage:
     return cv2.imdecode(np.fromfile(filepath, dtype=np.uint8), -1)
 
 
+def save_image(image: CvImage, filepath: str) -> None:
+    """
+    保存图片到文件
+    :param image: CvImage cv2图片
+    :param filepath: 文件路径
+    :return:
+    """
+    with open(filepath, 'wb') as fp:
+        fp.write(cv2bytes(image))
+
+
 def bytes2cv(image: bytes) -> CvImage:
     """
     二进制图片转cv2图片
