@@ -124,12 +124,13 @@ class MinicapStream:
                     readFrameBytes += 1
                 # 读取图片内容
                 else:
+                    # print(f"{self.__host}:{self.__port} frame length:{frameBodyLength} length:{length} cursor:{cursor}")
                     if length - cursor >= frameBodyLength:
                         dataBody = dataBody + chunk[cursor:(cursor + frameBodyLength)]
                         if dataBody[0] != 0xFF or dataBody[1] != 0xD8:
                             return
                         self.picture.put(dataBody)
-                        # print("add image")
+                        # print(f"{self.__host}:{self.__port} add image")
                         # save_file(str(time.time()) + '.jpg', dataBody)
                         cursor += frameBodyLength
                         frameBodyLength = 0
