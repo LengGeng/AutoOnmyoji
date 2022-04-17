@@ -1,6 +1,12 @@
+import random
 from typing import TypeVar, Union, Tuple, Generator
 
-__all__ = ["Pos", "AnyPos", "TuplePos", "Scope", "AnyScope", "TupleScope"]
+__all__ = [
+    "Pos", "TuplePos", "AnyPos",
+    "Scope", "TupleScope", "AnyScope",
+    "ProportionPos", "TupleProportionPos", "AnyProportionPos",
+    "getProportionPos"
+]
 
 
 class Pos:
@@ -35,6 +41,13 @@ class Scope:
     @property
     def height(self) -> float:
         return abs(self.e.y - self.s.y)
+
+    def randomPos(self) -> Pos:
+        """
+        从一个范围中随机获取一个点
+        :return: 随机点
+        """
+        return Pos(random.uniform(self.s.x, self.e.x), random.uniform(self.s.y, self.e.y))
 
 
 TupleScope = Tuple[TuplePos, TuplePos]
