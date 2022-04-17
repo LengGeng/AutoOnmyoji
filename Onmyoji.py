@@ -4,7 +4,9 @@
 # 开发时间  :   2019/9/26 16:21
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
-from drive import MiniDriver, Scope, choose_driver, Driver
+import random
+
+from drive import MiniDriver, Scope, choose_driver, Driver, getProportionPos
 from utils.mood import Mood
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
@@ -27,12 +29,25 @@ class BaseOnmyoji:
         self.module = ""
         self.mood = Mood()
         self._init_log_()
+        self._init_scope_()
 
     # 初始化Logger
     def _init_log_(self):
         log_path = os.path.join(self.driver.log_dir, "script.log")
         self.logger = get_logger(log_path)
         self.logger.info("*" * 15 + "Script Start" + "*" * 15)
+
+    def _init_scope_(self):
+        self.screen_scope = Scope((0, 0), self.driver.size)
+        self.bottom_scope = Scope(
+            *tuple(getProportionPos(self.screen_scope, (675 / 1920, 1020 / 1080), (1000 / 1920, 1020 / 1080)))
+        )
+        self.right_scope = Scope(*tuple(getProportionPos(self.screen_scope, (1855 / 1920, 580 / 1080), (1, 1))))
+        self.right_middle_scope = Scope(
+            *tuple(getProportionPos(self.screen_scope, (1535 / 1920, 635 / 1080), (1535 / 1920, 835 / 1080)))
+        )
+        # 可点击范围列表，可以在某功能开始时进行适当更改
+        self.scopes = (self.bottom_scope, self.right_scope, self.right_middle_scope)
 
     # 获取图片对象
     def get_img(self, filename):
@@ -129,11 +144,8 @@ class BaseOnmyoji:
                 if self.match("战斗失败.png", "公共"):
                     self.logger.info("检测到战斗失败")
                     end_sign = False
-                end_regions = [
-                    [[0.3515, 0.8981], [0.5208, 0.8981]],
-                    [[0.7994, 0.5879], [0.7994, 0.7731]],
-                ]
-                pos = fun.get_random_pos(*Match.get_ratio_pos(self.driver.screen, *fun.choice(end_regions)))
+
+                pos = random.choice((self.bottom_scope, self.right_scope, self.right_middle_scope)).randomPos()
                 self.logger.info(f"点击屏幕:{pos}")
                 self.driver.click(pos)
                 fun.random_time(0.5, 0.8)  # 随机等待
