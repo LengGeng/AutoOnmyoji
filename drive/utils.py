@@ -8,6 +8,8 @@ __all__ = [
     "getProportionPos"
 ]
 
+TuplePos = Tuple[float, float]
+
 
 class Pos:
     def __init__(self, x: float, y: float):
@@ -17,9 +19,14 @@ class Pos:
     def __repr__(self):
         return f"Pos({self.x}, {self.y})"
 
+    @property
+    def value(self) -> TuplePos:
+        return self.x, self.y
 
-TuplePos = Tuple[float, float]
+
 AnyPos = TypeVar("AnyPos", Pos, TuplePos)
+
+TupleScope = Tuple[TuplePos, TuplePos]
 
 
 class Scope:
@@ -42,6 +49,10 @@ class Scope:
     def height(self) -> float:
         return abs(self.e.y - self.s.y)
 
+    @property
+    def value(self) -> TupleScope:
+        return self.s.value, self.e.value
+
     def randomPos(self) -> Pos:
         """
         从一个范围中随机获取一个点
@@ -50,7 +61,6 @@ class Scope:
         return Pos(random.uniform(self.s.x, self.e.x), random.uniform(self.s.y, self.e.y))
 
 
-TupleScope = Tuple[TuplePos, TuplePos]
 AnyScope = TypeVar("AnyScope", Scope, Tuple[Pos, Pos], TupleScope)
 
 
