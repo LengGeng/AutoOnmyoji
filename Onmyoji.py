@@ -393,7 +393,7 @@ class Onmyoji(BaseOnmyoji):
         while True:
             self.driver.screenshot()
             # 检查是否在结界界面
-            if not (self.match("突破标志.png") or self.match("突破标志.png")):
+            if not (self.match("突破标志.png") or self.match("突破标志2.png")):
                 self.logger.warning("当前不在结界界面")
                 if self.match_touch("结界突破.png", "公共"):
                     self.logger.info("已自动进入结界突破界面")
@@ -411,7 +411,7 @@ class Onmyoji(BaseOnmyoji):
                 fun.random_time(15 * 60, 20 * 60)
             self.driver.threshold = 0.9
             self.logger.info("获取结界目标")
-            pos_list = Match.get_match_pos(self.driver.screen, self.get_img("突破对象标志.png"), 0.92)
+            pos_list = Match.get_match_pos(self.driver.screen, self.get_img("结界/突破对象标志2.png"), 0.92)
             if pos_list:
                 self.logger.info("获取到{}个结界目标".format(len(pos_list)))
                 # 开始遍历结界目标
