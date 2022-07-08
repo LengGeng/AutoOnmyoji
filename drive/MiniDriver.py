@@ -18,6 +18,13 @@ class MiniDriver(AdbDriver):
         super(MiniDriver, self)._init_()
         self._init_minicap_()
 
+    def _init_system_info_(self):
+        super()._init_system_info_()
+        # 获取系统参数
+        self.abi = self.device.getprop("ro.product.cpu.abi")
+        self.sdk_version = self.device.getprop("ro.build.version.sdk")
+        self.logger.debug(f"abi:{self.abi}, sdk_version:{self.sdk_version}")
+
     def _init_minicap_(self):
         self.logger.debug("_init_minicap_")
         self._send_minicap()
@@ -26,10 +33,6 @@ class MiniDriver(AdbDriver):
 
     def _send_minicap(self):
         self.logger.debug("_send_minicap start")
-        # 获取系统参数
-        self.abi = self.device.getprop("ro.product.cpu.abi")
-        self.sdk_version = self.device.getprop("ro.build.version.sdk")
-        self.logger.debug(f"abi:{self.abi}, sdk_version:{self.sdk_version}")
         # 获取 minicap 文件位置
         minicap_path = os.path.abspath(f"{LIBS_PATH}/stf/{self.abi}/minicap")
         minicap_so_path = os.path.abspath(
