@@ -44,6 +44,7 @@ class AdbDriver(Driver):
         for BRAND in BRANDS:
             if BRAND in fingerprint:
                 self.brand = BRAND
+                break
         else:
             # 不支持的机型
             self.brand = None
