@@ -153,7 +153,7 @@ def _save_file(file_name, data):
 if __name__ == '__main__':
     import cv2
     from utils.imageUtils import bytes2cv
-
+    from utils.screenUtils import suitable_screensize
     loop_queue = LoopQueue()
     minicap_stream_builder = MinicapStream.getBuilder("127.0.0.1", 1717, loop_queue)
     minicap_stream_builder.run()
@@ -161,7 +161,9 @@ if __name__ == '__main__':
     print("show image")
     print(loop_queue.size())
     while True:
-        img = loop_queue.get()
-        # numpy.ma
-        cv2.imshow("Image", bytes2cv(img))
+        screen = bytes2cv(loop_queue.get())
+        # 缩放到原来的二分之一，输出尺寸格式为（宽，高）
+        adapt_size = tuple(int(i) for i in suitable_screensize(screen.shape[0:2][::-1]))
+        screen_resize = cv2.resize(screen, adapt_size)
+        cv2.imshow("Screen", screen_resize)
         cv2.waitKey(1)
