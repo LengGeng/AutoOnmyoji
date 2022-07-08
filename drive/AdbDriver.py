@@ -8,6 +8,8 @@ import adbutils
 from drive import Driver, Pos, AnyPos, Scope, AnyScope
 from settings import SCREEN_PATH
 
+BRANDS = ["MEIZU", "XIAOMI", "VIVO", "LG"]
+
 
 class AdbDriver(Driver):
 
@@ -30,6 +32,17 @@ class AdbDriver(Driver):
         rotation = self.device.rotation()
         self.width, self.height = (w, h) if rotation % 2 == 0 else (h, w)
         self.logger.debug(f"driver init WindowSize({self.displays})")
+
+    def _init_brand_(self):
+        # 获取设备指纹
+        fingerprint = self.device.getprop("ro.vendor.build.fingerprint").upper()
+        # 判断是都是可以识别的型号
+        for BRAND in BRANDS:
+            if BRAND in fingerprint:
+                self.brand = BRAND
+        else:
+            # 不支持的机型
+            self.brand = None
 
     @staticmethod
     def driver_list() -> List[adbutils.AdbDevice]:
