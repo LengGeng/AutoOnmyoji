@@ -20,11 +20,15 @@ class AdbDriver(Driver):
 
     def _init_(self):
         super(AdbDriver, self)._init_()
-        self._init_window_size_()
+        self._init_system_info_()
 
     def _start_(self):
         self.logger.info("driver start")
         self.screenshot()
+
+    def _init_system_info_(self):
+        self._init_window_size_()
+        self._init_brand_()
 
     def _init_window_size_(self):
         # noinspection PyProtectedMember
