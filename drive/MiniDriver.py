@@ -119,10 +119,10 @@ class MiniDriver(AdbDriver):
 
     def _read_minicap_stream(self):
         self.logger.debug("_read_minicap_stream start")
-        self.screen_queue = LoopQueue()
-        self.minicap_stream = MinicapStream("127.0.0.1", self.minicap_port, self.screen_queue)
+        self.minicap_stream = MinicapStream.getBuilder("127.0.0.1", self.minicap_port)
         self.minicap_stream.run()
         self.banner = self.minicap_stream.banner
+        self.screen_queue = self.minicap_stream.queue
         self.logger.debug(f"minicap.banner:{self.banner}")
         self.logger.debug("_read_minicap_stream finish")
 

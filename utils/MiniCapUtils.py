@@ -41,7 +41,7 @@ class MinicapStream:
     __instance = {}
     __mutex = threading.Lock()
 
-    def __init__(self, host: str, port: int, queue):
+    def __init__(self, host: str, port: int, queue: LoopQueue):
         self.buffer_size = 4096
         self.__host = host  # socket 主机
         self.__port = port  # socket 端口
@@ -50,16 +50,16 @@ class MinicapStream:
         self.__pid = 0  # 进程ID
         self.minicapSocket = None
         self.ReadImageStreamTask = None
-        self.picture = queue
+        self.queue = queue  # 图像数据队列
 
     @staticmethod
-    def getBuilder(host: str, port: int, queue):
+    def getBuilder(host: str, port: int, size=5) -> "MinicapStream":
         """Return a single instance of TestBuilder object """
         key = f"{host}:{port}"
         if key not in MinicapStream.__instance:
             MinicapStream.__mutex.acquire()
             if key not in MinicapStream.__instance:
-                MinicapStream.__instance[key] = MinicapStream(host, port, queue)
+                MinicapStream.__instance[key] = MinicapStream(host, port, LoopQueue(maxsize=size))
             MinicapStream.__mutex.release()
         return MinicapStream.__instance[key]
 
@@ -129,7 +129,7 @@ class MinicapStream:
                         dataBody = dataBody + chunk[cursor:(cursor + frameBodyLength)]
                         if dataBody[0] != 0xFF or dataBody[1] != 0xD8:
                             return
-                        self.picture.put(dataBody)
+                        self.queue.put(dataBody)
                         # print(f"{self.__host}:{self.__port} add image")
                         # save_file(str(time.time()) + '.jpg', dataBody)
                         cursor += frameBodyLength
@@ -154,14 +154,14 @@ if __name__ == '__main__':
     import cv2
     from utils.imageUtils import bytes2cv
     from utils.screenUtils import suitable_screensize
-    loop_queue = LoopQueue()
-    minicap_stream_builder = MinicapStream.getBuilder("127.0.0.1", 1717, loop_queue)
-    minicap_stream_builder.run()
+
+    builder = MinicapStream.getBuilder("127.0.0.1", 1717)
+    builder.run()
 
     print("show image")
-    print(loop_queue.size())
+    print(builder.queue.size())
     while True:
-        screen = bytes2cv(loop_queue.get())
+        screen = bytes2cv(builder.queue.get())
         # 缩放到原来的二分之一，输出尺寸格式为（宽，高）
         adapt_size = tuple(int(i) for i in suitable_screensize(screen.shape[0:2][::-1]))
         screen_resize = cv2.resize(screen, adapt_size)
