@@ -29,6 +29,8 @@ class MiniDriver(AdbDriver):
         self.logger.debug("_init_minicap_")
         self._send_minicap()
         self._start_minicap()
+        self._check_minicap_start()
+        self._forward_minicap()
         self._read_minicap_stream()
 
     def _send_minicap(self):
@@ -58,15 +60,39 @@ class MiniDriver(AdbDriver):
         start_minicap_server_cmd = f"adb -s {self._serial} shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P {self.displays}@{self.displays}/0"
         self.logger.debug(f"start_minicap_server_cmd:{start_minicap_server_cmd}")
         # 日志
-        minicap_log_path = os.path.join(self.log_dir, "minicap.log")
-        self.logger.debug(f"minicap_log_path:{minicap_log_path}")
-        with open(minicap_log_path, "ab") as fp:
+        self.minicap_log_path = os.path.join(self.log_dir, "minicap.log")
+        self.logger.debug(f"minicap_log_path:{self.minicap_log_path}")
+        with open(self.minicap_log_path, "ab") as fp:
             self.minicap_popen = Popen(start_minicap_server_cmd, stdout=fp, stderr=fp)
             # 等待服务启动完成
             self.logger.info("wait for the minicap serve to startup")
             time.sleep(2)
-            self.logger.info("minicap serve startup complete")
+
+    def _check_minicap_start(self):
+        self.logger.debug("_check_minicap_start start")
+        with open(self.minicap_log_path) as fp:
+            lines = fp.readlines()
+            if len(lines) > 8:
+                content = "".join(lines[-8:])
+            else:
+                content = "".join(lines)
+            if "Server start" in content:
+                # 启动成功
+                self.logger.info("minicap serve startup complete")
+            else:
+                if "Aborted" in content:
+                    # 启动失败
+                    self.logger.info("minicap serve startup failed")
+                    #  尝试解决 Vector<> have different types 错误
+                    if "Vector<> have different types" in content:
+                        pass
+                else:
+                    self.logger.info("minicap serve startup exception")
+                exit(1)
+
+    def _forward_minicap(self):
         # 代理
+        self.logger.debug("_forward_minicap start")
         self.minicap_port = self.device.forward_port("localabstract:minicap")
         self.logger.debug(f"minicap forward port {self.minicap_port}")
         self.logger.debug("_start_minicap finish")
