@@ -85,10 +85,30 @@ class MiniDriver(AdbDriver):
                     self.logger.info("minicap serve startup failed")
                     #  尝试解决 Vector<> have different types 错误
                     if "Vector<> have different types" in content:
-                        pass
+                        self._handle_vector_error()
+                        return
                 else:
                     self.logger.info("minicap serve startup exception")
                 exit(1)
+
+    def _handle_vector_error(self):
+        self.logger.debug("_handle_vector_error start")
+        SupportedBrand = ["XIAOMI", "VIVO", "LG"]
+        self.logger.debug(self.brand)
+        if self.brand in SupportedBrand:
+            supported_vector_minicap_so_path = os.path.abspath(
+                f"{LIBS_PATH}/stf/vector_error/{self.brand}/android-{self.sdk_version}/{self.abi}/minicap.so"
+            )
+            if os.path.isfile(supported_vector_minicap_so_path):
+                self.logger.debug("try handle vector error")
+                self.logger.debug(f"supported_vector_minicap_so_path:{supported_vector_minicap_so_path}")
+                # 发送新的 minicap
+                self.device.push(supported_vector_minicap_so_path, "/data/local/tmp/")
+                self.logger.debug("try restart minicap")
+                self._start_minicap()
+                return
+        # 无法处理
+        self.logger.debug("try handle vector error but it is an unsupported brand")
 
     def _forward_minicap(self):
         # 代理
