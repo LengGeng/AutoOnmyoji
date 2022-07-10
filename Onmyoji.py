@@ -177,6 +177,27 @@ class BaseOnmyoji:
         except TimeoutException:
             self.logger.warning("准备超时退出")
 
+    # 等待队伍满员
+    @threading_timeoutable()
+    def _wait_full_team(self):
+        """
+        用于检测队伍成员是否全部进入
+        :return:
+        """
+        try:
+            self.driver.screenshot()
+            # 检测满员标志，不出现则代表满员跳出检测
+            while self.match("满队标志.png", "组队"):
+                self.driver.screenshot()
+                fun.random_time(0.3, 0.5)
+            # 再次检测减少误差
+            while self.match("满队标志.png", "组队"):
+                self.driver.screenshot()
+                fun.random_time(0.3, 0.5)
+            self.logger.warning("队伍已满员")
+        except TimeoutException:
+            self.logger.warning("等待队伍满员超时退出")
+
     # 开启默认邀请
     def _invite_(self):
         """
@@ -329,20 +350,26 @@ class Onmyoji(BaseOnmyoji):
                 self.logger.info("总共进行了%s次%s" % (i, category))
 
     # 组队
-    def zudui(self, count):
+    def zudui(self, count, full):
         """组队司机
         该功能用于正常的组队挑战。可适应于组队御魂、觉醒等，需要先手动组队并勾选默认邀请。
         :param count: 组队的次数
+        :param full: 是否为满队
         :return:
         """
         self.module = "组队"
         self.logger.info("任务：组队司机")
         self.logger.info("目标：{}次".format(count))
+        self.logger.info("参数：是否等待满员{}".format(full))
         i = 0
         while i < int(count):
             self.driver.screenshot()
             if self._locking_():
                 if self.match("组队开始标志.png"):
+                    # 等待队伍满员
+                    if full:
+                        self.logger.info("等待队伍满员")
+                        self._wait_full_team(timeout=15)
                     if self.match_touch("挑战.png"):
                         self.logger.info("开始战斗")
                         self._ready_(timeout=8)  # 准备
