@@ -14,7 +14,7 @@ def OnmyojiRun(serial, fun, *args, **kwargs):
         else:
             print("无效的功能函数")
     except Exception as e:
-        print(e)
+        print("OnmyojiRun Exception:", e)
 
 
 def get_fun():

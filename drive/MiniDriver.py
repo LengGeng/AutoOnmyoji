@@ -127,9 +127,9 @@ class MiniDriver(AdbDriver):
         self.logger.debug("_read_minicap_stream finish")
 
     def screenshot(self) -> None:
-        self.logger.debug(f"driver screenshot start")
+        # self.logger.debug(f"driver screenshot start")
         self._screen = bytes2cv(self.screen_queue.get())
-        self.logger.debug(f"driver screenshot finish")
+        # self.logger.debug(f"driver screenshot finish")
 
     def __del__(self):
         if self.minicap_popen:

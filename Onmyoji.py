@@ -163,19 +163,15 @@ class BaseOnmyoji:
         :return: 是否成功准备
         """
         try:
-            ready_sign = False
             fun.random_time(1, 1.5)
             while True:
                 self.driver.screenshot()  # 截图
                 while self.match("准备.png", "公共"):
                     self.driver.screenshot()  # 截图
                     self.match_touch("准备.png", "公共")
-                    ready_sign = True
-                if ready_sign:
-                    self.logger.info("准备")
                     return True
         except TimeoutException:
-            self.logger.warning("准备超时退出")
+            return False
 
     # 等待队伍满员
     @threading_timeoutable()
@@ -194,9 +190,9 @@ class BaseOnmyoji:
             while self.match("满队标志.png", "组队"):
                 self.driver.screenshot()
                 fun.random_time(0.3, 0.5)
-            self.logger.warning("队伍已满员")
+            return True
         except TimeoutException:
-            self.logger.warning("等待队伍满员超时退出")
+            return False
 
     # 开启默认邀请
     def _invite_(self):
@@ -233,7 +229,10 @@ class BaseOnmyoji:
         self.driver.screenshot()
         if self.match_touch("挑战_业原火.png", "业原火") or self.match_touch("挑战_菱形.png", "公共"):
             self.logger.info("开始挑战")
-            self._ready_(timeout=8)
+            if self._ready_(timeout=8):
+                self.logger.warning("准备")
+            else:
+                self.logger.info("准备超时退出")
             if self._end_():
                 self.logger.info("结束挑战")
                 return True
@@ -369,10 +368,16 @@ class Onmyoji(BaseOnmyoji):
                     # 等待队伍满员
                     if full:
                         self.logger.info("等待队伍满员")
-                        self._wait_full_team(timeout=15)
+                        if self._wait_full_team(timeout=15):
+                            self.logger.info("队伍已满员")
+                        else:
+                            self.logger.warning("等待队伍满员超时退出")
                     if self.match_touch("挑战.png"):
                         self.logger.info("开始战斗")
-                        self._ready_(timeout=8)  # 准备
+                        if self._ready_(timeout=8):
+                            self.logger.warning("准备")
+                        else:
+                            self.logger.info("准备超时退出")
                         if self._end_(invite=True):
                             i += 1
                             self.logger.info("当前已进行{}次".format(i))
@@ -401,7 +406,10 @@ class Onmyoji(BaseOnmyoji):
             if accept:
                 if self._accept_invite_(timeout=8):
                     accept = False
-            self._ready_(timeout=5)
+            if self._ready_(timeout=5):
+                self.logger.warning("准备")
+            else:
+                self.logger.info("准备超时退出")
             if self._end_():
                 i += 1
                 self.logger.info("当前已进行{}次".format(i))
@@ -584,7 +592,10 @@ class Onmyoji(BaseOnmyoji):
                             break
                         self.logger.info("开始挑战超鬼王")
                         # 准备
-                        self._ready_()
+                        if self._ready_(timeout=8):
+                            self.logger.warning("准备")
+                        else:
+                            self.logger.info("准备超时退出")
                         # 等待结束
                         if self._end_():
                             count += 1
