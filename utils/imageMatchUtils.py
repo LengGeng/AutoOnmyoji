@@ -3,8 +3,8 @@ from typing import Optional, List, Tuple
 import cv2
 import numpy as np
 
-from drive import Scope
-from utils.imageUtils import CvImage, save_image, image_size, show_adapt
+from utils.PosUtils import Scope
+from utils.ImageUtils import CvImage, save_image, image_size, show_adapt
 
 
 def match_in(image: CvImage, template: CvImage, threshold: float = 0.95) -> bool:

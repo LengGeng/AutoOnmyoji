@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 from utils.PosUtils import AnyPos, AnyScope
 from settings import LOG_PATH, DATE
 from utils.FileUtils import replace_invalid_filename_char, check_dirs
-from utils.imageUtils import CvImage
-from utils.logger import get_logger
+from utils.ImageUtils import CvImage
+from utils.LogUtils import get_logger
 
 Screen = CvImage
 

@@ -5,8 +5,9 @@ from typing import List
 import cv2
 import adbutils
 
-from drive import Driver, Pos, AnyPos, Scope, AnyScope
+from drives import Driver
 from settings import SCREEN_PATH
+from utils.PosUtils import Pos, Scope, AnyPos, AnyScope
 
 BRANDS = ["MEIZU", "XIAOMI", "VIVO", "LG"]
 

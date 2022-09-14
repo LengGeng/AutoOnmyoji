@@ -1,8 +1,8 @@
 from typing import Optional, List
 
-from drive.Driver import Driver
-from drive.AdbDriver import AdbDriver
-from drive.MiniDriver import MiniDriver
+from drives.Driver import Driver
+from drives.AdbDriver import AdbDriver
+from drives.MiniDriver import MiniDriver
 
 DRIVER_ACTIVE = []
 

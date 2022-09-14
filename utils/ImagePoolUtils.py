@@ -2,7 +2,7 @@ import os.path
 from typing import Dict
 from threading import Lock
 
-from utils.imageUtils import CvImage, read_image
+from utils.ImageUtils import CvImage, read_image
 
 
 class ImagePool:

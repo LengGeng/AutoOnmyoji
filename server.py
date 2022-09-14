@@ -10,7 +10,7 @@ import psutil
 import os.path
 import urllib.parse
 
-from drive import MiniDriver
+from drives import MiniDriver
 from utils.adb import Adb
 from multiprocessing import Process
 from webbrowser import open as webopen

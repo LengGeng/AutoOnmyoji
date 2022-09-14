@@ -152,8 +152,8 @@ def _save_file(file_name, data):
 
 if __name__ == '__main__':
     import cv2
-    from utils.imageUtils import bytes2cv
-    from utils.screenUtils import suitable_screensize
+    from utils.ImageUtils import bytes2cv
+    from utils.ScreenUtils import suitable_screensize
 
     builder = MinicapStream.getBuilder("127.0.0.1", 1717)
     builder.run()

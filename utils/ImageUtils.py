@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import base64
 
-from utils.screenUtils import suitable_screensize
+from utils.ScreenUtils import suitable_screensize
 
 CvImage = NewType("CvImage", np.ndarray)  # cv2 ImageObject(np.ndarray)
 

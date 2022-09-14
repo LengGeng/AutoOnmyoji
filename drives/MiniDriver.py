@@ -2,11 +2,11 @@ import os.path
 import time
 from subprocess import Popen
 
-from drive.AdbDriver import AdbDriver
+from drives.AdbDriver import AdbDriver
 from settings import LIBS_PATH
 from utils.LoopQueue import LoopQueue
 from utils.MiniCapUtils import MinicapStream
-from utils.imageUtils import bytes2cv
+from utils.ImageUtils import bytes2cv
 
 
 class MiniDriver(AdbDriver):
