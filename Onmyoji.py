@@ -11,7 +11,6 @@ from auto import Auto
 from drives import MiniDriver, choose_driver, Driver
 from utils.ImagePoolUtils import ImagePool
 from utils.PosUtils import Scope, get_proportion_pos
-from utils.match import Match
 from utils import LogUtils, CVUtils
 from stopit import threading_timeoutable
 
@@ -251,9 +250,9 @@ class Onmyoji(BaseOnmyoji):
                 if self.auto.match_touch(self.images.公共["御魂.png"]):
                     self.logger.info("进入御魂页面")
                     self.auto.delay()
-                    pos = Match.get_ratio_pos(self.driver.screen, [0.6, 0.3], [0.8, .75])
-                    self.logger.info(pos)
-                    self.driver.click(pos)
+                    scope = Scope(*tuple(get_proportion_pos(self.screen_scope, (0.6, 0.3), (0.8, .75))))
+                    self.logger.info(scope)
+                    self.driver.click(scope.randomPos())
                     self.logger.info("进入业原火页面")
                     break
         # 检查是否锁定阵容
