@@ -11,8 +11,7 @@ from utils.PosUtils import Scope, get_proportion_pos
 from utils.mood import Mood
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
-from utils import functions as fun
-from utils.LogUtils import get_logger
+from utils import functions as fun, LogUtils
 from stopit import threading_timeoutable
 from stopit.utils import TimeoutException
 
@@ -35,7 +34,7 @@ class BaseOnmyoji:
     # 初始化Logger
     def _init_log_(self):
         log_path = os.path.join(self.driver.log_dir, "script.log")
-        self.logger = get_logger(log_path)
+        self.logger = LogUtils.LogUtils(__name__).add_file_handler(log_path, LogUtils.DEBUG).getLogger()
         self.logger.info("*" * 15 + "Script Start" + "*" * 15)
 
     def _init_scope_(self):

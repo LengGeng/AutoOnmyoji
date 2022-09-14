@@ -5,7 +5,7 @@ from utils.PosUtils import AnyPos, AnyScope
 from settings import LOG_PATH, DATE
 from utils.FileUtils import replace_invalid_filename_char, check_dirs
 from utils.ImageUtils import CvImage
-from utils.LogUtils import get_logger
+from utils import LogUtils
 
 Screen = CvImage
 
@@ -40,7 +40,7 @@ class Driver:
         self.log_dir = os.path.join(LOG_PATH, replace_invalid_filename_char(self._serial), str(DATE))
         check_dirs(self.log_dir)
         log_file_path = os.path.join(self.log_dir, "driver.log")
-        self.logger = get_logger(log_file_path)
+        self.logger = LogUtils.LogUtils(__name__).add_file_handler(log_file_path, LogUtils.DEBUG).getLogger()
         self.logger.debug("driver init log")
 
     def _start_(self):
