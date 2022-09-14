@@ -1,6 +1,5 @@
 from typing import Optional, List
 
-from drive.utils import *
 from drive.Driver import Driver
 from drive.AdbDriver import AdbDriver
 from drive.MiniDriver import MiniDriver

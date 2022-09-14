@@ -1,7 +1,7 @@
 import os.path
 from typing import Optional, Tuple
 
-from drive.utils import AnyPos, AnyScope
+from utils.PosUtils import AnyPos, AnyScope
 from settings import LOG_PATH, DATE
 from utils.FileUtils import replace_invalid_filename_char, check_dirs
 from utils.imageUtils import CvImage
