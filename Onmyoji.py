@@ -47,31 +47,6 @@ class BaseOnmyoji:
         # 可点击范围列表，可以在某功能开始时进行适当更改
         self.scopes = (self.bottom_scope, self.right_scope, self.right_middle_scope)
 
-    # 匹配图像目标
-    def match(self, template):
-        """
-        当前设备图片识别
-        :param template: 识别图片对象或路径
-        :return: 匹配结果 boolean
-        """
-        return Match.match(self.driver.screen, template)
-
-    # 匹配图像并点击坐标
-    def match_touch(self, template):
-        """
-        匹配并点击图像在设备截图中的随机点
-        :param template: 识别图片对象或路径
-        :return:
-        """
-        pos_list = Match.get_match_pos(self.driver.screen, template, self.threshold)
-        if pos_list:
-            pos = fun.get_random_pos(*pos_list[0])
-            if pos:
-                self.logger.info(f"点击屏幕:{pos}")
-                self.driver.click(pos)
-                return True
-        return False
-
     # 结束
     def _end_(self, invite=False):
         """
@@ -93,14 +68,14 @@ class BaseOnmyoji:
             self.auto.delay()
             self.driver.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
-            while any(map(self.match, end_flag_images)):
+            while any(map(self.auto.match, end_flag_images)):
                 self.logger.info("检测到结算页面")
                 end_sign = True
                 # 默认邀请队友
                 if invite:
                     if self._invite_():
                         break
-                if self.match(module_images["战斗失败.png"]):
+                if self.auto.match(module_images["战斗失败.png"]):
                     self.logger.info("检测到战斗失败")
                     end_sign = False
 
@@ -123,9 +98,9 @@ class BaseOnmyoji:
         self.auto.delay((1, 1.5))
         while True:
             self.driver.screenshot()  # 截图
-            while self.match(self.images.公共["准备.png"]):
+            while self.auto.match(self.images.公共["准备.png"]):
                 self.driver.screenshot()  # 截图
-                self.match_touch(self.images.公共["准备.png"])
+                self.auto.match_touch(self.images.公共["准备.png"])
                 return True
 
     # 等待队伍满员
@@ -137,11 +112,11 @@ class BaseOnmyoji:
         """
         self.driver.screenshot()
         # 检测满员标志，不出现则代表满员跳出检测
-        while self.match(self.images.组队["满队标志.png"]):
+        while self.auto.match(self.images.组队["满队标志.png"]):
             self.driver.screenshot()
             self.auto.delay((0.3, 0.5))
         # 再次检测减少误差
-        while self.match(self.images.组队["满队标志.png"]):
+        while self.auto.match(self.images.组队["满队标志.png"]):
             self.driver.screenshot()
             self.auto.delay((0.3, 0.5))
         return True
@@ -152,9 +127,9 @@ class BaseOnmyoji:
         开启默认邀请
         :return: 是否开启默认邀请成功
         """
-        if self.match_touch(self.images.组队["默认邀请.png"]):
+        if self.auto.match_touch(self.images.组队["默认邀请.png"]):
             self.auto.delay()
-            if self.match_touch(self.images.公共["确定.png"]):
+            if self.auto.match_touch(self.images.公共["确定.png"]):
                 self.logger.info("开启默认邀请")
                 return True
             else:
@@ -165,7 +140,7 @@ class BaseOnmyoji:
     @threading_timeoutable(default=False)
     def _accept_invite_(self):
         while True:
-            if self.match_touch(self.images.组队["同意默认邀请.png"]):
+            if self.auto.match_touch(self.images.组队["同意默认邀请.png"]):
                 self.logger.info("同意接受默认邀请")
                 return True
 
@@ -176,7 +151,7 @@ class BaseOnmyoji:
         :return:
         """
         self.driver.screenshot()
-        if self.match_touch(self.images.业原火["挑战_业原火.png"]) or self.match_touch(self.images.公共["挑战_菱形.png"]):
+        if self.auto.match_touch(self.images.业原火["挑战_业原火.png"]) or self.auto.match_touch(self.images.公共["挑战_菱形.png"]):
             self.logger.info("开始挑战")
             if self._ready_(timeout=8):
                 self.logger.warning("准备")
@@ -198,13 +173,13 @@ class BaseOnmyoji:
 
     # 协作邀请
     def _reward_task_(self, accept=False):
-        if self.match(self.images.异常处理["协作邀请.png"]):
+        if self.auto.match(self.images.异常处理["协作邀请.png"]):
             self.logger.info("检测到协作邀请")
             if accept:
-                self.match_touch(self.images.公共["同意.png"])
+                self.auto.match_touch(self.images.公共["同意.png"])
                 self.logger.info("协作邀请已同意")
             else:
-                self.match_touch(self.images.公共["拒绝.png"])
+                self.auto.match_touch(self.images.公共["拒绝.png"])
                 self.logger.info("协作邀请已拒绝")
 
     # 确认阵容锁定状态
@@ -213,10 +188,10 @@ class BaseOnmyoji:
         确认阵容锁定状态
         :return: bool
         """
-        if self.match(self.images.公共["锁.png"]):
+        if self.auto.match(self.images.公共["锁.png"]):
             self.logger.info("当前阵容已处于锁定状态")
             return True
-        elif self.match_touch(self.images.公共["锁_开.png"]):
+        elif self.auto.match_touch(self.images.公共["锁_开.png"]):
             self.logger.info("当前阵容未锁定,已为您自动锁定")
             return True
         else:
@@ -269,11 +244,11 @@ class Onmyoji(BaseOnmyoji):
         self.driver.screenshot()
         # 进入业原火界面
         for i in range(5):
-            if self.match_touch(self.images.主页["探索.png"]):
+            if self.auto.match_touch(self.images.主页["探索.png"]):
                 self.logger.info("进入探索页面")
                 self.auto.delay()
                 self.driver.screenshot()
-                if self.match_touch(self.images.公共["御魂.png"]):
+                if self.auto.match_touch(self.images.公共["御魂.png"]):
                     self.logger.info("进入御魂页面")
                     self.auto.delay()
                     pos = Match.get_ratio_pos(self.driver.screen, [0.6, 0.3], [0.8, .75])
@@ -287,7 +262,7 @@ class Onmyoji(BaseOnmyoji):
         for category in option:
             count = options[category]
             if count:
-                if self.match_touch(module_images[f"{category}.png"]):
+                if self.auto.match_touch(module_images[f"{category}.png"]):
                     self.logger.info(f"切换至: {category}")
                 i = 0
                 while i < count:
@@ -312,7 +287,7 @@ class Onmyoji(BaseOnmyoji):
         while i < int(count):
             self.driver.screenshot()
             if self._locking_():
-                if self.match(module_images["组队开始标志.png"]):
+                if self.auto.match(module_images["组队开始标志.png"]):
                     # 等待队伍满员
                     if full:
                         self.logger.info("等待队伍满员")
@@ -320,7 +295,7 @@ class Onmyoji(BaseOnmyoji):
                             self.logger.info("队伍已满员")
                         else:
                             self.logger.warning("等待队伍满员超时退出")
-                    if self.match_touch(module_images["挑战.png"]):
+                    if self.auto.match_touch(module_images["挑战.png"]):
                         self.logger.info("开始战斗")
                         if self._ready_(timeout=8):
                             self.logger.warning("准备")
@@ -378,9 +353,9 @@ class Onmyoji(BaseOnmyoji):
         while True:
             self.driver.screenshot()
             # 检查是否在结界界面
-            if not (self.match(module_images["突破标志.png"]) or self.match(module_images["突破标志2.png"])):
+            if not (self.auto.match(module_images["突破标志.png"]) or self.auto.match(module_images["突破标志2.png"])):
                 self.logger.warning("当前不在结界界面")
-                if self.match_touch(self.images.公共["结界突破.png"]):
+                if self.auto.match_touch(self.images.公共["结界突破.png"]):
                     self.logger.info("已自动进入结界突破界面")
                     self.driver.screenshot()
                 else:
@@ -390,7 +365,7 @@ class Onmyoji(BaseOnmyoji):
             screen = self.driver.screen
             self.driver.threshold = 0.98
             # 判断当前次数
-            if self.match(module_images["寮次数.png"]):
+            if self.auto.match(module_images["寮次数.png"]):
                 self.logger.warning("突破次数不足")
                 # 等待15-20分钟
                 self.auto.delay((15 * 60, 20 * 60))
@@ -402,8 +377,8 @@ class Onmyoji(BaseOnmyoji):
                 # 开始遍历结界目标
                 for pos in pos_list:
                     self.driver.screenshot()
-                    if not self.match_touch(self.images.公共["宝箱.png"]):
-                        self.match_touch(self.images.公共["宝箱2.png"])
+                    if not self.auto.match_touch(self.images.公共["宝箱.png"]):
+                        self.auto.match_touch(self.images.公共["宝箱2.png"])
                     pos_begin = (pos[1][0] - jiejie_object_width, pos[1][1] - jiejie_object_height)
                     pos_end = pos[1]
                     self.logger.info("开始节点：{}结束节点：{}".format(pos_begin, pos_end))
@@ -420,7 +395,7 @@ class Onmyoji(BaseOnmyoji):
                             self.driver.click(fun.get_random_pos(*pos))  # ####
                             self.auto.delay()
                             self.driver.screenshot()
-                            if self.match_touch(module_images["进攻.png"]):
+                            if self.auto.match_touch(module_images["进攻.png"]):
                                 self.logger.info("开始突破")
                                 self.driver.screenshot()
                                 if self._end_():
@@ -451,11 +426,11 @@ class Onmyoji(BaseOnmyoji):
         # 进入万事屋
         self.driver.screenshot()
         self.logger.info("尝试进入万事屋")
-        self.match_touch(module_images["进入万事屋.png"])
+        self.auto.match_touch(module_images["进入万事屋.png"])
         self.auto.delay()
         self.driver.screenshot()
         self.logger.info("尝试进入事件")
-        self.match_touch(module_images["进入事件.png"])
+        self.auto.match_touch(module_images["进入事件.png"])
         self.auto.delay()
         # 自动领取奖励主循环
         while True:
@@ -463,23 +438,23 @@ class Onmyoji(BaseOnmyoji):
             # 异常检查
             self._check_()
             # 检测突发状况Buff
-            if self.match(module_images["事件_突发状况.png"]):
+            if self.auto.match(module_images["事件_突发状况.png"]):
                 self.logger.info("检测到突发状况Buff")
-                self.match_touch(module_images["事件_一键领取.png"])
+                self.auto.match_touch(module_images["事件_一键领取.png"])
             # 检测未关闭的奖励页面
-            if self.match(module_images["事件_奖励.png"]):
-                self.match_touch(module_images["事件_一键领取.png"])
+            if self.auto.match(module_images["事件_奖励.png"]):
+                self.auto.match_touch(module_images["事件_一键领取.png"])
             # 领取循环
             self.auto.delay()
             self.driver.screenshot()
-            if self.match_touch(module_images["事件_一键领取.png"]):
+            if self.auto.match_touch(module_images["事件_一键领取.png"]):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
                     self.auto.delay()
                     self.driver.screenshot()
-                    if self.match(module_images["事件_奖励.png"]):
-                        self.match_touch(module_images["事件_一键领取.png"])
+                    if self.auto.match(module_images["事件_奖励.png"]):
+                        self.auto.match_touch(module_images["事件_一键领取.png"])
                         self.logger.info("成功领取奖励")
                         # 检测无法自动领取的奖励
                         # pass
@@ -507,10 +482,10 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("任务: 超鬼王")
         while count < 100:
             self.driver.screenshot()  # 截图
-            self.match_touch(self.images.公共["觉醒.png"])  # 匹配点击图片
+            self.auto.match_touch(self.images.公共["觉醒.png"])  # 匹配点击图片
             self.auto.delay()
             self.driver.screenshot()  # 截图
-            self.match_touch(self.images.觉醒[random.choice(kyLin)])  # 选择列表中随机一个进行点击
+            self.auto.match_touch(self.images.觉醒[random.choice(kyLin)])  # 选择列表中随机一个进行点击
             if self._locking_():
                 self.logger.info("当前阵容已处于锁定状态")
 
@@ -519,11 +494,11 @@ class Onmyoji(BaseOnmyoji):
                 while True:
                     self.auto.delay()
                     self.driver.screenshot()  # 截图
-                    if self.match_touch(module_images["发现超鬼王.png"]):
-                        self.match_touch(module_images["发现超鬼王.png"])
+                    if self.auto.match_touch(module_images["发现超鬼王.png"]):
+                        self.auto.match_touch(module_images["发现超鬼王.png"])
                         self.logger.info("发现超鬼王")
                         break  # 跳出觉醒循环
-                    if self.match_touch(self.images.觉醒["挑战.png"]):
+                    if self.auto.match_touch(self.images.觉醒["挑战.png"]):
                         self.logger.info("开始挑战")
                         # 等待挑战结束
                         if self._end_():
@@ -538,7 +513,7 @@ class Onmyoji(BaseOnmyoji):
                     while True:
                         self.auto.delay()
                         self.driver.screenshot()  # 截图
-                        if not self.match_touch(module_images["挑战.png"]):
+                        if not self.auto.match_touch(module_images["挑战.png"]):
                             break
                         self.logger.info("开始挑战超鬼王")
                         # 准备
@@ -549,7 +524,7 @@ class Onmyoji(BaseOnmyoji):
                         # 等待结束
                         if self._end_():
                             count += 1
-                    if self.match_touch(self.images.公共["返回.png"]):
+                    if self.auto.match_touch(self.images.公共["返回.png"]):
                         self.logger.info("击败超鬼王,跳出超鬼王阶段")
                         self.logger.info("当前已击败%s只鬼王" % count)
                         break
