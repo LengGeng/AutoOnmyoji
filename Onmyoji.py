@@ -7,10 +7,10 @@
 import random
 
 import settings
+from auto import Auto
 from drives import MiniDriver, choose_driver, Driver
 from utils.ImagePoolUtils import ImagePool
 from utils.PosUtils import Scope, get_proportion_pos
-from utils.DelayUtils import MoodDelay
 from utils.match import Match
 from utils import functions as fun, LogUtils
 from stopit import threading_timeoutable
@@ -25,7 +25,7 @@ class BaseOnmyoji:
 
     def __init__(self, driver: Driver):
         self.driver = driver
-        self.mood = MoodDelay()
+        self.auto = Auto(driver)
         self._init_log_()
         self._init_scope_()
 
@@ -90,7 +90,7 @@ class BaseOnmyoji:
         ]
         while True:
             end_sign = None  # 结算成功标志
-            self.mood.sleep()  # 随机等待
+            self.auto.delay()
             self.driver.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while any(map(self.match, end_flag_images)):
@@ -107,7 +107,7 @@ class BaseOnmyoji:
                 pos = random.choice((self.bottom_scope, self.right_scope, self.right_middle_scope)).randomPos()
                 self.logger.info(f"点击屏幕:{pos}")
                 self.driver.click(pos)
-                fun.random_time(0.5, 0.8)  # 随机等待
+                self.auto.delay((0.5, 0.8))
                 self.driver.screenshot()  # 截图
             if end_sign is not None:  # 结算后跳出结算循环
                 self.logger.info("结算成功")
@@ -120,7 +120,7 @@ class BaseOnmyoji:
         准备
         :return: 是否成功准备
         """
-        fun.random_time(1, 1.5)
+        self.auto.delay((1, 1.5))
         while True:
             self.driver.screenshot()  # 截图
             while self.match(self.images.公共["准备.png"]):
@@ -139,11 +139,11 @@ class BaseOnmyoji:
         # 检测满员标志，不出现则代表满员跳出检测
         while self.match(self.images.组队["满队标志.png"]):
             self.driver.screenshot()
-            fun.random_time(0.3, 0.5)
+            self.auto.delay((0.3, 0.5))
         # 再次检测减少误差
         while self.match(self.images.组队["满队标志.png"]):
             self.driver.screenshot()
-            fun.random_time(0.3, 0.5)
+            self.auto.delay((0.3, 0.5))
         return True
 
     # 开启默认邀请
@@ -153,7 +153,7 @@ class BaseOnmyoji:
         :return: 是否开启默认邀请成功
         """
         if self.match_touch(self.images.组队["默认邀请.png"]):
-            self.mood.sleep()
+            self.auto.delay()
             if self.match_touch(self.images.公共["确定.png"]):
                 self.logger.info("开启默认邀请")
                 return True
@@ -271,11 +271,11 @@ class Onmyoji(BaseOnmyoji):
         for i in range(5):
             if self.match_touch(self.images.主页["探索.png"]):
                 self.logger.info("进入探索页面")
-                self.mood.sleep()
+                self.auto.delay()
                 self.driver.screenshot()
                 if self.match_touch(self.images.公共["御魂.png"]):
                     self.logger.info("进入御魂页面")
-                    self.mood.sleep()
+                    self.auto.delay()
                     pos = Match.get_ratio_pos(self.driver.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
                     self.driver.click(pos)
@@ -393,7 +393,7 @@ class Onmyoji(BaseOnmyoji):
             if self.match(module_images["寮次数.png"]):
                 self.logger.warning("突破次数不足")
                 # 等待15-20分钟
-                fun.random_time(15 * 60, 20 * 60)
+                self.auto.delay((15 * 60, 20 * 60))
             self.driver.threshold = 0.9
             self.logger.info("获取结界目标")
             pos_list = Match.get_match_pos(self.driver.screen, module_images["突破对象标志2.png"], 0.92)
@@ -418,14 +418,14 @@ class Onmyoji(BaseOnmyoji):
                         else:
                             self.logger.info("目标状态：未突破")
                             self.driver.click(fun.get_random_pos(*pos))  # ####
-                            self.mood.sleep()
+                            self.auto.delay()
                             self.driver.screenshot()
                             if self.match_touch(module_images["进攻.png"]):
                                 self.logger.info("开始突破")
                                 self.driver.screenshot()
                                 if self._end_():
                                     self.logger.info("突破成功")
-                                    self.mood.sleep()
+                                    self.auto.delay()
                                     break
                                 else:
                                     self.logger.info("突破失败")
@@ -437,7 +437,7 @@ class Onmyoji(BaseOnmyoji):
                 else:
                     # self.driver.slide_event(1200, 875, dc="u", distance=700)
                     self.driver.swipe(Scope((1200, 875), (1200, 175)), 200)
-                    self.mood.sleep()
+                    self.auto.delay()
             else:
                 self.logger.warning("未获取到结界目标")
 
@@ -452,11 +452,11 @@ class Onmyoji(BaseOnmyoji):
         self.driver.screenshot()
         self.logger.info("尝试进入万事屋")
         self.match_touch(module_images["进入万事屋.png"])
-        self.mood.sleep()
+        self.auto.delay()
         self.driver.screenshot()
         self.logger.info("尝试进入事件")
         self.match_touch(module_images["进入事件.png"])
-        self.mood.sleep()
+        self.auto.delay()
         # 自动领取奖励主循环
         while True:
             self.driver.screenshot()
@@ -470,13 +470,13 @@ class Onmyoji(BaseOnmyoji):
             if self.match(module_images["事件_奖励.png"]):
                 self.match_touch(module_images["事件_一键领取.png"])
             # 领取循环
-            self.mood.sleep()
+            self.auto.delay()
             self.driver.screenshot()
             if self.match_touch(module_images["事件_一键领取.png"]):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
-                    self.mood.sleep()
+                    self.auto.delay()
                     self.driver.screenshot()
                     if self.match(module_images["事件_奖励.png"]):
                         self.match_touch(module_images["事件_一键领取.png"])
@@ -489,7 +489,7 @@ class Onmyoji(BaseOnmyoji):
                         self.logger.warning("点击了一键领取奖励，但未检测到奖励页面。")
                         break
                 # 等待5-10分钟
-                fun.random_time(60 * 5, 60 * 10)
+                self.auto.delay((60 * 5, 60 * 10))
             else:
                 self.logger.error("不在程序运行所需场景，请切换至{万事屋=>事件}场景。")
 
@@ -508,7 +508,7 @@ class Onmyoji(BaseOnmyoji):
         while count < 100:
             self.driver.screenshot()  # 截图
             self.match_touch(self.images.公共["觉醒.png"])  # 匹配点击图片
-            self.mood.sleep()  # 随机等待
+            self.auto.delay()
             self.driver.screenshot()  # 截图
             self.match_touch(self.images.觉醒[random.choice(kyLin)])  # 选择列表中随机一个进行点击
             if self._locking_():
@@ -517,7 +517,7 @@ class Onmyoji(BaseOnmyoji):
                 # 进入循环挑战觉醒阶段
                 self.logger.info("进入循环挑战觉醒阶段")
                 while True:
-                    self.mood.sleep()  # 随机等待
+                    self.auto.delay()
                     self.driver.screenshot()  # 截图
                     if self.match_touch(module_images["发现超鬼王.png"]):
                         self.match_touch(module_images["发现超鬼王.png"])
@@ -533,10 +533,10 @@ class Onmyoji(BaseOnmyoji):
                 # 进入超鬼王阶段
                 self.logger.info("进入超鬼王阶段")
                 while True:
-                    self.mood.sleep()  # 随机等待
+                    self.auto.delay()
                     self.driver.screenshot()  # 截图
                     while True:
-                        self.mood.sleep()  # 随机等待
+                        self.auto.delay()
                         self.driver.screenshot()  # 截图
                         if not self.match_touch(module_images["挑战.png"]):
                             break
@@ -563,7 +563,7 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("测试函数开始执行")
         for _ in range(10):
             self.logger.info("测试函数执行")
-            self.mood.sleep()
+            self.auto.delay()
         self.logger.info("测试函数执行结束")
 
 
