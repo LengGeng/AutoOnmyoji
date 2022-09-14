@@ -57,15 +57,6 @@ class BaseOnmyoji:
         """
         return Match.match(self.driver.screen, template)
 
-    # 匹配多个图像目标
-    def matchs(self, *args):
-        """同时匹配多个图片
-        self.match的加强版,同时匹配多个普片
-        :param args: match函数的参数集合的列表 [(arg1,arg2...),...]
-        :return: 多个匹配中是否有匹配到
-        """
-        return any(self.match(*arg) for arg in args)
-
     # 匹配图像并点击坐标
     def match_touch(self, template):
         """
@@ -90,19 +81,20 @@ class BaseOnmyoji:
         """
         # 等待结束
         module_images = self.images.公共
+        end_flag_images = [
+            module_images["战斗胜利.png"],
+            module_images["战斗失败.png"],
+            module_images["结束标志.png"],
+            module_images["贪吃鬼.png"],
+            module_images["宝箱.png"],
+            module_images["宝箱2.png"],
+        ]
         while True:
             end_sign = None  # 结算成功标志
             self.mood.sleep()  # 随机等待
             self.driver.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
-            while self.matchs(
-                    ("战斗胜利.png", "公共"),
-                    ("战斗失败.png", "公共"),
-                    ("结束标志.png", "公共"),
-                    ("贪吃鬼.png", "公共"),
-                    ("宝箱.png", "公共"),
-                    ("宝箱2.png", "公共"),
-            ):
+            while any(map(self.match, end_flag_images)):
                 self.logger.info("检测到结算页面")
                 end_sign = True
                 # 默认邀请队友
