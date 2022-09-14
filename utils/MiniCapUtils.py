@@ -2,7 +2,7 @@ import socket
 import struct
 import threading
 
-from utils.LoopQueue import LoopQueue
+from utils.QueueUtils import PipeQueue
 
 
 class Banner:
@@ -41,7 +41,7 @@ class MinicapStream:
     __instance = {}
     __mutex = threading.Lock()
 
-    def __init__(self, host: str, port: int, queue: LoopQueue):
+    def __init__(self, host: str, port: int, queue: PipeQueue):
         self.buffer_size = 4096
         self.__host = host  # socket 主机
         self.__port = port  # socket 端口
@@ -59,7 +59,7 @@ class MinicapStream:
         if key not in MinicapStream.__instance:
             MinicapStream.__mutex.acquire()
             if key not in MinicapStream.__instance:
-                MinicapStream.__instance[key] = MinicapStream(host, port, LoopQueue(maxsize=size))
+                MinicapStream.__instance[key] = MinicapStream(host, port, PipeQueue(maxsize=size))
             MinicapStream.__mutex.release()
         return MinicapStream.__instance[key]
 
@@ -124,7 +124,8 @@ class MinicapStream:
                     readFrameBytes += 1
                 # 读取图片内容
                 else:
-                    # print(f"{self.__host}:{self.__port} frame length:{frameBodyLength} length:{length} cursor:{cursor}")
+                    # print(f"{self.__host}:{self.__port}")
+                    # print(f"frame length:{frameBodyLength} length:{length} cursor:{cursor}")
                     if length - cursor >= frameBodyLength:
                         dataBody = dataBody + chunk[cursor:(cursor + frameBodyLength)]
                         if dataBody[0] != 0xFF or dataBody[1] != 0xD8:
@@ -141,29 +142,3 @@ class MinicapStream:
                         frameBodyLength -= length - cursor
                         readFrameBytes += length - cursor
                         cursor = length
-
-
-def _save_file(file_name, data):
-    file = open(file_name, "wb")
-    file.write(data)
-    file.flush()
-    file.close()
-
-
-if __name__ == '__main__':
-    import cv2
-    from utils.ImageUtils import bytes2cv
-    from utils.ScreenUtils import suitable_screensize
-
-    builder = MinicapStream.getBuilder("127.0.0.1", 1717)
-    builder.run()
-
-    print("show image")
-    print(builder.queue.size())
-    while True:
-        screen = bytes2cv(builder.queue.get())
-        # 缩放到原来的二分之一，输出尺寸格式为（宽，高）
-        adapt_size = tuple(int(i) for i in suitable_screensize(screen.shape[0:2][::-1]))
-        screen_resize = cv2.resize(screen, adapt_size)
-        cv2.imshow("Screen", screen_resize)
-        cv2.waitKey(1)
