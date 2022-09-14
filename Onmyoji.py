@@ -14,7 +14,6 @@ from utils.DelayUtils import MoodDelay
 from utils.match import Match
 from utils import functions as fun, LogUtils
 from stopit import threading_timeoutable
-from stopit.utils import TimeoutException
 
 import os
 import time
@@ -115,44 +114,37 @@ class BaseOnmyoji:
                 return end_sign
 
     # 准备
-    @threading_timeoutable()
+    @threading_timeoutable(default=False)
     def _ready_(self):
         """
         准备
-        :param timeout: 超时时间
         :return: 是否成功准备
         """
-        try:
-            fun.random_time(1, 1.5)
-            while True:
+        fun.random_time(1, 1.5)
+        while True:
+            self.driver.screenshot()  # 截图
+            while self.match(self.images.公共["准备.png"]):
                 self.driver.screenshot()  # 截图
-                while self.match(self.images.公共["准备.png"]):
-                    self.driver.screenshot()  # 截图
-                    self.match_touch(self.images.公共["准备.png"])
-                    return True
-        except TimeoutException:
-            return False
+                self.match_touch(self.images.公共["准备.png"])
+                return True
 
     # 等待队伍满员
-    @threading_timeoutable()
+    @threading_timeoutable(default=False)
     def _wait_full_team(self):
         """
         用于检测队伍成员是否全部进入
         :return:
         """
-        try:
+        self.driver.screenshot()
+        # 检测满员标志，不出现则代表满员跳出检测
+        while self.match(self.images.组队["满队标志.png"]):
             self.driver.screenshot()
-            # 检测满员标志，不出现则代表满员跳出检测
-            while self.match(self.images.组队["满队标志.png"]):
-                self.driver.screenshot()
-                fun.random_time(0.3, 0.5)
-            # 再次检测减少误差
-            while self.match(self.images.组队["满队标志.png"]):
-                self.driver.screenshot()
-                fun.random_time(0.3, 0.5)
-            return True
-        except TimeoutException:
-            return False
+            fun.random_time(0.3, 0.5)
+        # 再次检测减少误差
+        while self.match(self.images.组队["满队标志.png"]):
+            self.driver.screenshot()
+            fun.random_time(0.3, 0.5)
+        return True
 
     # 开启默认邀请
     def _invite_(self):
@@ -170,15 +162,12 @@ class BaseOnmyoji:
                 return False
 
     # 开启接受默认邀请
-    @threading_timeoutable()
+    @threading_timeoutable(default=False)
     def _accept_invite_(self):
-        try:
-            while True:
-                if self.match_touch(self.images.组队["同意默认邀请.png"]):
-                    self.logger.info("同意接受默认邀请")
-                    return True
-        except TimeoutException:
-            self.logger.warning("没有收到队友的默认邀请")
+        while True:
+            if self.match_touch(self.images.组队["同意默认邀请.png"]):
+                self.logger.info("同意接受默认邀请")
+                return True
 
     # 正常挑战
     def _combat_(self):
@@ -365,6 +354,8 @@ class Onmyoji(BaseOnmyoji):
             if accept:
                 if self._accept_invite_(timeout=8):
                     accept = False
+                else:
+                    self.logger.warning("没有收到队友的默认邀请")
             if self._ready_(timeout=5):
                 self.logger.warning("准备")
             else:
