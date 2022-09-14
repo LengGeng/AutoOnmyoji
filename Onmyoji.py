@@ -8,7 +8,7 @@ import random
 
 from drives import MiniDriver, choose_driver, Driver
 from utils.PosUtils import Scope, get_proportion_pos
-from utils.mood import Mood
+from utils.DelayUtils import MoodDelay
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
 from utils import functions as fun, LogUtils
@@ -27,7 +27,7 @@ class BaseOnmyoji:
     def __init__(self, driver: Driver):
         self.driver = driver
         self.module = ""
-        self.mood = Mood()
+        self.mood = MoodDelay()
         self._init_log_()
         self._init_scope_()
 
@@ -124,7 +124,7 @@ class BaseOnmyoji:
         # 等待结束
         while True:
             end_sign = None  # 结算成功标志
-            self.mood.mood_sleep()  # 随机等待
+            self.mood.sleep()  # 随机等待
             self.driver.screenshot()  # 截图
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while self.matchs(
@@ -201,7 +201,7 @@ class BaseOnmyoji:
         :return: 是否开启默认邀请成功
         """
         if self.match_touch("默认邀请.png", "组队"):
-            self.mood.mood_sleep()
+            self.mood.sleep()
             if self.match_touch("确定.png", "公共"):
                 self.logger.info("开启默认邀请")
                 return True
@@ -323,11 +323,11 @@ class Onmyoji(BaseOnmyoji):
         for i in range(5):
             if self.match_touch("探索.png", "主页"):
                 self.logger.info("进入探索页面")
-                self.mood.mood_sleep()
+                self.mood.sleep()
                 self.driver.screenshot()
                 if self.match_touch("御魂.png", "公共"):
                     self.logger.info("进入御魂页面")
-                    self.mood.mood_sleep()
+                    self.mood.sleep()
                     pos = Match.get_ratio_pos(self.driver.screen, [0.6, 0.3], [0.8, .75])
                     self.logger.info(pos)
                     self.driver.click(pos)
@@ -468,14 +468,14 @@ class Onmyoji(BaseOnmyoji):
                         else:
                             self.logger.info("目标状态：未突破")
                             self.driver.click(fun.get_random_pos(*pos))  # ####
-                            self.mood.mood_sleep()
+                            self.mood.sleep()
                             self.driver.screenshot()
                             if self.match_touch("进攻.png"):
                                 self.logger.info("开始突破")
                                 self.driver.screenshot()
                                 if self._end_():
                                     self.logger.info("突破成功")
-                                    self.mood.mood_sleep()
+                                    self.mood.sleep()
                                     break
                                 else:
                                     self.logger.info("突破失败")
@@ -487,7 +487,7 @@ class Onmyoji(BaseOnmyoji):
                 else:
                     # self.driver.slide_event(1200, 875, dc="u", distance=700)
                     self.driver.swipe(Scope((1200, 875), (1200, 175)), 200)
-                    self.mood.mood_sleep()
+                    self.mood.sleep()
             else:
                 self.logger.warning("未获取到结界目标")
 
@@ -502,11 +502,11 @@ class Onmyoji(BaseOnmyoji):
         self.driver.screenshot()
         self.logger.info("尝试进入万事屋")
         self.match_touch("进入万事屋.png")
-        self.mood.mood_sleep()
+        self.mood.sleep()
         self.driver.screenshot()
         self.logger.info("尝试进入事件")
         self.match_touch("进入事件.png")
-        self.mood.mood_sleep()
+        self.mood.sleep()
         # 自动领取奖励主循环
         while True:
             self.driver.screenshot()
@@ -520,13 +520,13 @@ class Onmyoji(BaseOnmyoji):
             if self.match("事件_奖励.png"):
                 self.match_touch(fun.choice(["事件_一键领取.png"]))
             # 领取循环
-            self.mood.mood_sleep()
+            self.mood.sleep()
             self.driver.screenshot()
             if self.match_touch("事件_一键领取.png"):
                 self.logger.info("一键领取奖励")
                 start = time.time()
                 while True:
-                    self.mood.mood_sleep()
+                    self.mood.sleep()
                     self.driver.screenshot()
                     if self.match("事件_奖励.png"):
                         self.match_touch(fun.choice(["事件_一键领取.png"]))
@@ -558,7 +558,7 @@ class Onmyoji(BaseOnmyoji):
         while count < 100:
             self.driver.screenshot()  # 截图
             self.match_touch("觉醒.png", "公共")  # 匹配点击图片
-            self.mood.mood_sleep()  # 随机等待
+            self.mood.sleep()  # 随机等待
             self.driver.screenshot()  # 截图
             self.match_touch(fun.choice(kyLin))  # 选择列表中随机一个进行点击
             if self._locking_():
@@ -567,7 +567,7 @@ class Onmyoji(BaseOnmyoji):
                 # 进入循环挑战觉醒阶段
                 self.logger.info("进入循环挑战觉醒阶段")
                 while True:
-                    self.mood.mood_sleep()  # 随机等待
+                    self.mood.sleep()  # 随机等待
                     self.driver.screenshot()  # 截图
                     if self.match_touch("发现超鬼王.png"):
                         self.match_touch("发现超鬼王.png")
@@ -583,10 +583,10 @@ class Onmyoji(BaseOnmyoji):
                 # 进入超鬼王阶段
                 self.logger.info("进入超鬼王阶段")
                 while True:
-                    self.mood.mood_sleep()  # 随机等待
+                    self.mood.sleep()  # 随机等待
                     self.driver.screenshot()  # 截图
                     while True:
-                        self.mood.mood_sleep()  # 随机等待
+                        self.mood.sleep()  # 随机等待
                         self.driver.screenshot()  # 截图
                         if not self.match_touch("挑战.png"):
                             break
@@ -613,7 +613,7 @@ class Onmyoji(BaseOnmyoji):
         self.logger.info("测试函数开始执行")
         for _ in range(10):
             self.logger.info("测试函数执行")
-            self.mood.mood_sleep()
+            self.mood.sleep()
         self.logger.info("测试函数执行结束")
 
 
