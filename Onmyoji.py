@@ -12,7 +12,7 @@ from drives import MiniDriver, choose_driver, Driver
 from utils.ImagePoolUtils import ImagePool
 from utils.PosUtils import Scope, get_proportion_pos
 from utils.match import Match
-from utils import functions as fun, LogUtils
+from utils import LogUtils, CVUtils
 from stopit import threading_timeoutable
 
 import os
@@ -371,28 +371,27 @@ class Onmyoji(BaseOnmyoji):
                 self.auto.delay((15 * 60, 20 * 60))
             self.driver.threshold = 0.9
             self.logger.info("获取结界目标")
-            pos_list = Match.get_match_pos(self.driver.screen, module_images["突破对象标志2.png"], 0.92)
-            if pos_list:
-                self.logger.info("获取到{}个结界目标".format(len(pos_list)))
+            scopes = self.auto.find_all(module_images["突破对象标志2.png"])
+            if scopes:
+                self.logger.info("获取到{}个结界目标".format(len(scopes)))
                 # 开始遍历结界目标
-                for pos in pos_list:
+                for scope in scopes:
                     self.driver.screenshot()
                     if not self.auto.match_touch(self.images.公共["宝箱.png"]):
                         self.auto.match_touch(self.images.公共["宝箱2.png"])
-                    pos_begin = (pos[1][0] - jiejie_object_width, pos[1][1] - jiejie_object_height)
-                    pos_end = pos[1]
+                    pos_begin = (scope.e.x - jiejie_object_width, scope.e.y - jiejie_object_height)
+                    pos_end = scope.e
                     self.logger.info("开始节点：{}结束节点：{}".format(pos_begin, pos_end))
                     # 判断坐标真实有效,排除显示不全的目标
                     if pos_begin[0] > 0 and pos_begin[1] > 0:
-                        jiejie_img = screen[pos_begin[1]:pos_end[1], pos_begin[0]:pos_end[0]]
-                        Match.show_img(jiejie_img, time=800)
-                        if Match.match(jiejie_img, module_images["败北.png"]):
+                        jiejie_target_image = screen[pos_begin[1]:pos_end[1], pos_begin[0]:pos_end[0]]
+                        if CVUtils.match(jiejie_target_image, module_images["败北.png"]):
                             self.logger.info("目标状态：败北")
-                        elif Match.match(jiejie_img, module_images["击破.png"]):
+                        elif CVUtils.match(jiejie_target_image, module_images["击破.png"]):
                             self.logger.info("目标状态：击破")
                         else:
                             self.logger.info("目标状态：未突破")
-                            self.driver.click(fun.get_random_pos(*pos))  # ####
+                            self.driver.click(scope.randomPos())  # ####
                             self.auto.delay()
                             self.driver.screenshot()
                             if self.auto.match_touch(module_images["进攻.png"]):
