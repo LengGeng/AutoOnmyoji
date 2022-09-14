@@ -5,7 +5,8 @@ __all__ = [
     "Pos", "TuplePos", "AnyPos",
     "Scope", "TupleScope", "AnyScope",
     "ProportionPos", "TupleProportionPos", "AnyProportionPos",
-    "getProportionPos"
+    "get_proportion_pos",
+    "pos_distance"
 ]
 
 TuplePos = Tuple[float, float]
@@ -18,6 +19,11 @@ class Pos:
 
     def __repr__(self):
         return f"Pos({self.x}, {self.y})"
+
+    def __eq__(self, other):
+        if isinstance(other, Pos):
+            return self.x == other.x and self.y == other.y
+        return False
 
     @property
     def value(self) -> TuplePos:
@@ -41,6 +47,11 @@ class Scope:
     def __repr__(self):
         return f"Scope(({self.s.x}, {self.s.y}), ({self.e.x}, {self.e.y}))"
 
+    def __eq__(self, other):
+        if isinstance(other, Scope):
+            return self.s == other.s and self.e == other.e
+        return False
+
     @property
     def width(self) -> float:
         return abs(self.e.x - self.s.x)
@@ -59,6 +70,18 @@ class Scope:
         :return: 随机点
         """
         return Pos(random.uniform(self.s.x, self.e.x), random.uniform(self.s.y, self.e.y))
+
+    def isin(self, pos: AnyPos) -> bool:
+        """
+        判断点是否在范围中
+        :param pos: 判断的点
+        :return: 是否在范围中
+        """
+        if isinstance(pos, Pos):
+            x, y = pos.x, pos.y
+        else:
+            x, y = pos
+        return self.s.x <= x <= self.e.x and self.s.y <= y <= self.e.y
 
 
 AnyScope = TypeVar("AnyScope", Scope, Tuple[Pos, Pos], TupleScope)
@@ -95,7 +118,7 @@ TupleProportionPos = Union[Tuple[float, float], Tuple[int, int], Tuple[int, floa
 AnyProportionPos = TypeVar("AnyProportionPos", ProportionPos, TupleProportionPos)
 
 
-def getProportionPos(scope: AnyScope, *pro_poss: AnyProportionPos) -> Generator[Pos, None, None]:
+def get_proportion_pos(scope: AnyScope, *pro_poss: AnyProportionPos) -> Generator[Pos, None, None]:
     """
     处理一个范围的批量方法, 它是一个生成器
     :param scope: 范围
@@ -112,39 +135,20 @@ def getProportionPos(scope: AnyScope, *pro_poss: AnyProportionPos) -> Generator[
         yield pro_pos.getPos(scope)
 
 
-def _test_any_scope(scope: AnyScope):
-    if not isinstance(scope, Scope):
-        scope = Scope(*scope)
-    print(scope)
-
-
-def _test_pos():
-    pos1 = Pos(x=123, y=456)
-    pos2 = Pos(x=147, y=258)
-    print(f"{pos1}")
-    print(f"{pos2}")
-    scope1 = Scope(pos1, pos2)
-    print(f"{scope1}")
-    scope2 = Scope((100, 120), (200, 240))
-    print(f"{scope2}")
-    _test_any_scope(scope2)
-    _test_any_scope((Pos(100, 100), Pos(1000, 2000)))
-    _test_any_scope(((100, 100), (1000, 2000)))
-
-
-def _test_pro_pos():
-    print("_test_pro_pos")
-    pro_pos = ProportionPos(0.5, 5)
-    print(f"pro_pos={pro_pos}")
-    scope = Scope((0, 0), (1920, 1080))
-    print(f"scope={scope}")
-    print(f"pro_pos.getPos(scope)={pro_pos.getPos(scope)}")
-    print(f"pro_pos.getPos(((0, 0), (1920, 1080)))={pro_pos.getPos(((0, 0), (1920, 1080)))}")
-
-    poss = getProportionPos(scope, (10, 5), (0.1, 20))
-    print(f"getProportionPos()={tuple(poss)}")
-
-
-if __name__ == '__main__':
-    _test_pos()
-    _test_pro_pos()
+def pos_distance(a: AnyPos, b: AnyPos) -> float:
+    """
+    计算两点之间的距离
+    :param a: 点a
+    :param b: 点b
+    :return: 距离
+    """
+    if isinstance(a, Pos):
+        x1, y1 = a.x, a.y
+    else:
+        x1, y1 = a
+    if isinstance(b, Pos):
+        x2, y2 = b.x, b.y
+    else:
+        x2, y2 = b
+    # 利用勾股定理求距离
+    return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5

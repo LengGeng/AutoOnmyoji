@@ -7,7 +7,7 @@
 import random
 
 from drives import MiniDriver, choose_driver, Driver
-from utils.PosUtils import Scope, getProportionPos
+from utils.PosUtils import Scope, get_proportion_pos
 from utils.mood import Mood
 from utils.match import Match
 from utils.FileUtils import replace_invalid_filename_char
@@ -41,11 +41,11 @@ class BaseOnmyoji:
     def _init_scope_(self):
         self.screen_scope = Scope((0, 0), self.driver.size)
         self.bottom_scope = Scope(
-            *tuple(getProportionPos(self.screen_scope, (675 / 1920, 1020 / 1080), (1000 / 1920, 1020 / 1080)))
+            *tuple(get_proportion_pos(self.screen_scope, (675 / 1920, 1020 / 1080), (1000 / 1920, 1020 / 1080)))
         )
-        self.right_scope = Scope(*tuple(getProportionPos(self.screen_scope, (1855 / 1920, 580 / 1080), (1, 1))))
+        self.right_scope = Scope(*tuple(get_proportion_pos(self.screen_scope, (1855 / 1920, 580 / 1080), (1, 1))))
         self.right_middle_scope = Scope(
-            *tuple(getProportionPos(self.screen_scope, (1535 / 1920, 635 / 1080), (1535 / 1920, 835 / 1080)))
+            *tuple(get_proportion_pos(self.screen_scope, (1535 / 1920, 635 / 1080), (1535 / 1920, 835 / 1080)))
         )
         # 可点击范围列表，可以在某功能开始时进行适当更改
         self.scopes = (self.bottom_scope, self.right_scope, self.right_middle_scope)
