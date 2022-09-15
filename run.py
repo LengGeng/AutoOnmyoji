@@ -6,15 +6,12 @@ from multiprocessing import freeze_support
 
 
 def OnmyojiRun(serial, fun, *args, **kwargs):
-    try:
-        onmyoji = Onmyoji(MiniDriver(serial))
-        if hasattr(onmyoji, fun):
-            function = getattr(onmyoji, fun)
-            function(*args, **kwargs)
-        else:
-            print("无效的功能函数")
-    except Exception as e:
-        print("OnmyojiRun Exception:", e)
+    onmyoji = Onmyoji(MiniDriver(serial))
+    if hasattr(onmyoji, fun):
+        function = getattr(onmyoji, fun)
+        function(*args, **kwargs)
+    else:
+        print("无效的功能函数")
 
 
 def get_fun():
