@@ -47,12 +47,12 @@ class BaseOnmyoji:
         self.scopes = (self.bottom_scope, self.right_scope, self.right_middle_scope)
 
     # 结束
-    def _end_(self, invite=False):
+    def _end_(self, invite: bool = False):
         """
         判断并点击界面跳过结算界面(旧版本宝箱结算)
+        :param invite: 是否默认开启邀请队友
         :return: 结算结果
         """
-        # 等待结束
         module_images = self.images.公共
         end_flag_images = [
             module_images["战斗胜利.png"],
@@ -62,10 +62,11 @@ class BaseOnmyoji:
             module_images["宝箱.png"],
             module_images["宝箱2.png"],
         ]
+        # 等待结束
+        end_sign = None  # 结算成功标志
+        first_click = None  # 首次点击标志
         while True:
-            end_sign = None  # 结算成功标志
-            self.auto.delay()
-            self.driver.screenshot()  # 截图
+            self.driver.screenshot()
             # 一旦检测到结算标志进入循环,再次检测不到退出
             while any(map(self.auto.match, end_flag_images)):
                 self.logger.info("检测到结算页面")
@@ -74,18 +75,30 @@ class BaseOnmyoji:
                 if invite:
                     if self._invite_():
                         break
+                # 检查战斗失败,精度过低会把胜利识别成失败
+                auto_accuracy = self.auto.accuracy
+                self.auto.accuracy = 0.95
                 if self.auto.match(module_images["战斗失败.png"]):
                     self.logger.info("检测到战斗失败")
                     end_sign = False
-
+                self.auto.accuracy = auto_accuracy
+                # 点击屏幕
                 pos = random.choice((self.bottom_scope, self.right_scope, self.right_middle_scope)).randomPos()
-                self.logger.info(f"点击屏幕:{pos}")
-                self.driver.click(pos)
-                self.auto.delay((0.5, 0.8))
-                self.driver.screenshot()  # 截图
-            if end_sign is not None:  # 结算后跳出结算循环
+                # 首次双击
+                if first_click is None:
+                    first_click = True
+                    self.logger.info(f"双击屏幕:{pos}")
+                    self.auto.double_click(pos)
+                else:
+                    self.logger.info(f"点击屏幕:{pos}")
+                    self.auto.click(pos)
+                self.auto.delay()
+                self.driver.screenshot()
+            # 结算成功后返回结果
+            if end_sign is not None:
                 self.logger.info("结算成功")
                 return end_sign
+            self.auto.delay()
 
     # 准备
     @threading_timeoutable(default=False)
