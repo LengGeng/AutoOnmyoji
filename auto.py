@@ -156,7 +156,7 @@ class Auto:
         else:
             original_pos = pos
         poss = []
-        while len(poss) >= 2:
+        while len(poss) < 2:
             # 偏移
             offset_pos = (
                 original_pos.x + random.uniform(offset * -1, offset),
