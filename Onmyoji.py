@@ -5,12 +5,13 @@
 # 文件名称  :   onmyoji.PY
 # 开发工具  :   PyCharm
 import random
+from datetime import datetime
 
 import settings
 from auto import Auto
 from drives import MiniDriver, choose_driver, Driver
 from utils.ImagePoolUtils import ImagePool
-from utils.PosUtils import Scope, get_proportion_pos
+from utils.PosUtils import Scope, get_proportion_pos, Pos
 from utils import LogUtils, CVUtils
 from stopit import threading_timeoutable
 
@@ -359,73 +360,139 @@ class Onmyoji(BaseOnmyoji):
         """
         module_images = self.images.结界
         self.logger.info("任务: 结界突破")
+
         # 结界对象大小
-        jiejie_object_width = 455
-        jiejie_object_height = 160
+        target_width = 480
+        target_height = 180
+
+        self.driver.screenshot()
+        # 检查是否在结界界面
+        if not self.auto.match(module_images["结界突破标志.png"]):
+            self.logger.warning("当前不在结界界面,任务停止")
+            return
+        # 匹配突破模式
+        if self.auto.match(module_images["结界挑战券.png"]):
+            mode = "普通突破"
+        else:
+            mode = "寮突破"
+        self.logger.info(f"识别到突破模式为: {mode}")
+
+        # 结界突破
         while True:
             self.driver.screenshot()
-            # 检查是否在结界界面
-            if not (self.auto.match(module_images["突破标志.png"]) or self.auto.match(module_images["突破标志2.png"])):
-                self.logger.warning("当前不在结界界面")
-                if self.auto.match_touch(self.images.公共["结界突破.png"]):
-                    self.logger.info("已自动进入结界突破界面")
-                    self.driver.screenshot()
-                else:
-                    self.logger.error("无法进入结界突破界面,任务停止")
-                    break
-            # 匹配目标
             screen = self.driver.screen
-            self.driver.threshold = 0.98
-            # 判断当前次数
-            if self.auto.match(module_images["寮次数.png"]):
-                self.logger.warning("突破次数不足")
-                # 等待15-20分钟
-                self.auto.delay((15 * 60, 20 * 60))
-            self.driver.threshold = 0.9
+
             self.logger.info("获取结界目标")
-            scopes = self.auto.find_all(module_images["突破对象标志2.png"])
+            auto_accuracy = self.auto.accuracy
+            self.auto.accuracy = 0.9
+            scopes = self.auto.find_all(module_images["突破对象标志.png"])
+            self.auto.accuracy = auto_accuracy
             if scopes:
-                self.logger.info("获取到{}个结界目标".format(len(scopes)))
+                self.logger.info(f"获取到{len(scopes)}个结界目标")
                 # 开始遍历结界目标
                 for scope in scopes:
                     self.driver.screenshot()
-                    if not self.auto.match_touch(self.images.公共["宝箱.png"]):
-                        self.auto.match_touch(self.images.公共["宝箱2.png"])
-                    pos_begin = (scope.e.x - jiejie_object_width, scope.e.y - jiejie_object_height)
-                    pos_end = scope.e
-                    self.logger.info("开始节点：{}结束节点：{}".format(pos_begin, pos_end))
+                    # 检查突破次数奖励
+                    if any(map(self.auto.match_touch, [self.images.公共["宝箱.png"], self.images.公共["宝箱2.png"]])):
+                        self.logger.info("领取攻破次数奖励")
+                        self.auto.delay((1, 1.5))
+                        self.driver.screenshot()
+                    # 检查突破券剩余
+                    if mode == "普通突破":
+                        if self.auto.match(module_images["无突破券.png"]):
+                            self.logger.info("无突破卷,结束")
+                            return
+                    # 检查寮突破剩余次数
+                    else:
+                        # 21点后无次数限制
+                        if datetime.today().hour < 21:
+                            auto_accuracy = self.auto.accuracy
+                            self.auto.accuracy = 0.95
+                            if self.auto.match(module_images["寮次数.png"]):
+                                self.logger.warning("寮突破次数不足,等待恢复次数")
+                                # 等待20-50分钟
+                                self.auto.delay((20 * 60, 50 * 60))
+                            self.auto.accuracy = auto_accuracy
+                    # 计算突破目标
+                    target_begin_pos = Pos(scope.e.x - target_width, scope.e.y - target_height)
+                    target_end_pos = scope.e
+                    target_scope = Scope(target_begin_pos, target_end_pos)
+                    self.logger.info(f"突破目标范围: {target_scope}")
                     # 判断坐标真实有效,排除显示不全的目标
-                    if pos_begin[0] > 0 and pos_begin[1] > 0:
-                        jiejie_target_image = screen[pos_begin[1]:pos_end[1], pos_begin[0]:pos_end[0]]
-                        if CVUtils.match(jiejie_target_image, module_images["败北.png"]):
-                            self.logger.info("目标状态：败北")
-                        elif CVUtils.match(jiejie_target_image, module_images["击破.png"]):
-                            self.logger.info("目标状态：击破")
-                        else:
-                            self.logger.info("目标状态：未突破")
-                            self.driver.click(scope.randomPos())  # ####
-                            self.auto.delay()
+                    if target_begin_pos.x > 0 and target_begin_pos.y > 0:
+                        # 截取突破对象
+                        target_image = screen[
+                                       target_begin_pos.y:target_end_pos.y,
+                                       target_begin_pos.x:target_end_pos.x]
+                        # show_adapt(target_image)
+                        # 识别目标状态
+                        state = self.jiejie_target_state(target_image)
+                        # 无突破开始突破
+                        if state is None:
+                            self.logger.info("开始突破目标")
+                            # 点击突破目标右半部分
+                            click_scope = Scope((target_scope.s.x + target_scope.width / 2, target_scope.s.y),
+                                                target_scope.e)
+                            self.auto.click(click_scope)
+                            self.auto.delay((1, 1.5))
                             self.driver.screenshot()
                             if self.auto.match_touch(module_images["进攻.png"]):
-                                self.logger.info("开始突破")
+                                self.logger.info("进攻目标")
                                 self.driver.screenshot()
                                 if self._end_():
                                     self.logger.info("突破成功")
                                     self.auto.delay()
-                                    break
+                                    # 寮突破成功后列表刷新
+                                    if mode == "寮突破":
+                                        break
                                 else:
+                                    # 突破失败后进行下一目标
                                     self.logger.info("突破失败")
+                                    # 等待 避免一进入突破界面就开始突破
+                                    self.auto.delay()
                             else:
-                                self.logger.info("未检测到结界挑战页面")
+                                self.logger.info("未检测到结界目标挑战页面")
                     else:
-                        self.logger.warning("无效的坐标")
-                # 遍历完后滑动列表
+                        self.logger.warning("无效的突破目标")
+                # 所有识别目标中没有突破成功的目标
                 else:
-                    # self.driver.slide_event(1200, 875, dc="u", distance=700)
-                    self.driver.swipe(Scope((1200, 875), (1200, 175)), 200)
-                    self.auto.delay()
+                    self.logger.info("未击破任何结界")
+                    # 寮突破-滑动列表
+                    if mode == "寮突破":
+                        self.driver.swipe(Scope((1200, 875), (1200, 175)), 200)
+                        self.auto.delay((2, 3))
+                    # 普通突破-刷新结界
+                    else:
+                        if self.auto.match_touch(module_images["刷新.png"]):
+                            self.logger.info("刷新结界")
+                            self.auto.delay((1, 1.5))
+                            self.driver.screenshot()
+                            if self.auto.match_touch(self.images.公共["确定.png"]):
+                                self.logger.info("刷新结界成功")
+                                self.auto.delay((1, 1.5))
+                            else:
+                                self.logger.info("刷新结界失败")
+                        else:
+                            self.logger.info("无法刷新结界")
             else:
                 self.logger.warning("未获取到结界目标")
+
+    def jiejie_target_state(self, target_image):
+        module_images = self.images.结界
+        defeat_flags = [module_images["败北.png"], module_images["败北_新.png"]]
+        victory_flags = [module_images["击破.png"], module_images["击破_2.png"], module_images["击破_新.png"]]
+
+        if any((CVUtils.match(target_image, flag) for flag in defeat_flags)):
+            state = False
+            self.logger.info("目标状态：败北")
+        elif any((CVUtils.match(target_image, flag) for flag in victory_flags)):
+            state = True
+            self.logger.info("目标状态：击破")
+        else:
+            state = None
+            self.logger.info("目标状态：未突破")
+
+        return state
 
     # 万事屋
     def wanshiwu(self):
