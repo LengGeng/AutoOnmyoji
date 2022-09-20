@@ -397,14 +397,19 @@ class Onmyoji(BaseOnmyoji):
                         self.logger.info("领取攻破次数奖励")
                         self.auto.delay((1, 1.5))
                         self.driver.screenshot()
-                    # 检查突破券剩余
+
+                    # 必要的检查
                     if mode == "普通突破":
+                        # 检查突破券剩余
                         if self.auto.match(module_images["无突破券.png"]):
                             self.logger.info("无突破卷,结束")
                             return
-                    # 检查寮突破剩余次数
                     else:
-                        # 21点后无次数限制
+                        # 检查是否已攻破
+                        if self.auto.match(module_images["已攻破.png"]):
+                            self.logger.info("寮突已攻破")
+                            return
+                        # 检查寮突破剩余次数,21点后无次数限制
                         if datetime.today().hour < 21:
                             auto_accuracy = self.auto.accuracy
                             self.auto.accuracy = 0.95
@@ -413,6 +418,7 @@ class Onmyoji(BaseOnmyoji):
                                 # 等待20-50分钟
                                 self.auto.delay((20 * 60, 50 * 60))
                             self.auto.accuracy = auto_accuracy
+
                     # 计算突破目标
                     target_begin_pos = Pos(scope.e.x - target_width, scope.e.y - target_height)
                     target_end_pos = scope.e
