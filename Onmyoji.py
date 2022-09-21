@@ -223,6 +223,7 @@ class Onmyoji(BaseOnmyoji):
         "jiejie",
         "wanshiwu",
         "chaoguiwang",
+        "climb_tower"
     ]
 
     # 挑战
@@ -613,6 +614,109 @@ class Onmyoji(BaseOnmyoji):
                         self.logger.info("击败超鬼王,跳出超鬼王阶段")
                         self.logger.info("当前已击败%s只鬼王" % count)
                         break
+
+    def climb_tower(self):
+        """活动爬塔
+        当前为六周年 999 爬塔
+        :return:
+        """
+        module_images = self.images.爬塔
+        # 结算图片
+        settle_account_images = [
+            module_images["奖励.png"],
+            self.images.公共["战斗胜利.png"],
+            self.images.公共["战斗失败.png"]
+        ]
+
+        # 检测是否在活动界面
+        if not self.auto.match(module_images["退出.png"]):
+            self.logger.warning("未检测到活动界面,退出")
+            return
+
+        # 进入挑战界面
+        if self.auto.match_touch(module_images["挑战.png"]):
+            self.logger.info("进入挑战页面")
+            self.auto.delay((0.8, 1.2))
+            self.driver.screenshot()
+
+        # 检测消耗模式
+        if self.auto.match(module_images["x6.png"]):
+            mode = "体力模式"
+        else:
+            mode = "活动券模式"
+        self.logger.info(f"当前模式: {mode}")
+
+        count_victory = 0
+        count_defeat = 0
+        count_defeat_re = 0
+
+        while True:
+            self.driver.screenshot()
+            # 检测离开挑战界面
+            if self.auto.match_touch(module_images["挑战.png"]):
+                self.logger.info("进入挑战页面")
+                self.auto.delay((0.8, 1.2))
+                self.driver.screenshot()
+
+            # 检测是否次数不足
+            if mode == "活动券模式":
+                # 检测购买活动券
+                if self.auto.match(module_images["雷神契印特惠礼.png"]):
+                    self.logger.info("活动券次数不足")
+                    # 点击战斗区域退出购买界面
+                    if self.auto.match_touch(module_images["战斗.png"]):
+                        self.logger.info("关闭购买页面")
+                        self.auto.delay((0.8, 1.2))
+                        self.driver.screenshot()
+                    else:
+                        self.logger.info("无法退出活动券购买界面")
+                        return
+                    # 切换到体力模式
+                    toggles = self.auto.find_all(module_images["切换.png"])
+                    if toggles:
+                        for toggle in toggles:
+                            # 点击屏幕右半边的切换
+                            if toggle.s.x >= (self.driver.width / 2):
+                                self.logger.info("切换到体力模式")
+                                self.auto.click(toggle)
+                                break
+                        else:
+                            self.logger.info("无法切换体力模式")
+                        self.auto.delay((0.8, 1.2))
+                        self.driver.screenshot()
+
+                    # 检测模式是否切换成功
+                    if self.auto.match(module_images["x6.png"]):
+                        mode = "体力模式"
+                    else:
+                        self.logger.warning("切换到体力模式失败,退出")
+                        return
+
+            # 开始挑战
+            if self.auto.match_touch(module_images["战斗.png"]):
+                self.logger.info("开始挑战")
+                self.auto.delay((0.8, 1.2))
+                self.driver.screenshot()
+
+            # 检测挑战结束
+            if self.auto.match(module_images["奖励.png"]):
+                if self._end_(settle_account_images=settle_account_images):
+                    self.logger.info("挑战成功")
+                    self.auto.delay()
+                    count_victory += 1
+                    count_defeat_re = 0
+                else:
+                    self.logger.info("挑战失败")
+                    count_defeat += 1
+                    count_defeat_re += 1
+
+                # 连续失败退出
+                if count_defeat_re >= 5:
+                    self.logger.warning("连续失败达5次以上,退出")
+                    return
+
+            # 间隔等待
+            self.auto.delay((.8, 1.2))
 
     # 测试
     def test(self):
