@@ -48,14 +48,15 @@ class BaseOnmyoji:
         self.scopes = (self.bottom_scope, self.right_scope, self.right_middle_scope)
 
     # 结束
-    def _end_(self, invite: bool = False):
+    def _end_(self, invite: bool = False, settle_account_images=None):
         """
         判断并点击界面跳过结算界面(旧版本宝箱结算)
         :param invite: 是否默认开启邀请队友
+        :param settle_account_images: 结算时所检测的图片列表
         :return: 结算结果
         """
         module_images = self.images.公共
-        end_flag_images = [
+        end_flag_images = settle_account_images or [
             module_images["战斗胜利.png"],
             module_images["战斗失败.png"],
             module_images["结束标志.png"],
