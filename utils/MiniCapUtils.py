@@ -72,6 +72,7 @@ class MinicapStream:
         print(f"connect to {self.__host}:{self.__port}")
         # return self.ReadImageStream()
         self.ReadImageStreamTask = threading.Thread(target=self.ReadImageStream)
+        self.ReadImageStreamTask.daemon = True
         self.ReadImageStreamTask.start()
 
     def ReadImageStream(self):
