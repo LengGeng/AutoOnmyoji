@@ -703,7 +703,7 @@ class Onmyoji(BaseOnmyoji):
                 self.driver.screenshot()
 
             # 检测挑战结束
-            if self.auto.match(module_images["奖励.png"]):
+            if any(map(self.auto.match, settle_account_images)):
                 if self._end_(settle_account_images=settle_account_images):
                     self.logger.info("挑战成功")
                     self.auto.delay()
