@@ -4,8 +4,8 @@ from subprocess import Popen
 
 from drives.AdbDriver import AdbDriver
 from settings import LIBS_PATH
-from utils.MiniCapUtils import MinicapStream
 from utils.ImageUtils import bytes2cv
+from utils.MiniCapUtils import MinicapStream
 
 
 class MiniDriver(AdbDriver):
@@ -42,8 +42,8 @@ class MiniDriver(AdbDriver):
         self.logger.debug(f"minicap_path:{minicap_path}")
         self.logger.debug(f"minicap_so_path:{minicap_so_path}")
         # 发送 minicap
-        self.device.push(minicap_path, "/data/local/tmp/")
-        self.device.push(minicap_so_path, "/data/local/tmp/")
+        self.device.push(minicap_path, "/data/local/tmp/minicap")
+        self.device.push(minicap_so_path, "/data/local/tmp/minicap.so")
         self.logger.debug("_send_minicap finish")
 
     def _start_minicap(self):
@@ -102,7 +102,7 @@ class MiniDriver(AdbDriver):
                 self.logger.debug("try handle vector error")
                 self.logger.debug(f"supported_vector_minicap_so_path:{supported_vector_minicap_so_path}")
                 # 发送新的 minicap
-                self.device.push(supported_vector_minicap_so_path, "/data/local/tmp/")
+                self.device.push(supported_vector_minicap_so_path, "/data/local/tmp/minicap.so")
                 self.logger.debug("try restart minicap")
                 self._start_minicap()
                 return

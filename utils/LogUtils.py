@@ -44,7 +44,7 @@ class LogUtils:
         # 创建 logger 对象
         self._logger = logging.getLogger(name)
         # 设置日志输出等级总开关
-        self._logger.setLevel(level)
+        self._logger.setLevel(DEBUG)
         # 默认控制台日志
         if default_handler:
             self.add_sh_handler()
