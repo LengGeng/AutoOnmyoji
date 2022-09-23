@@ -3,24 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>AutoOnmyoji</title>
-    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
-    <!--<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>-->
-    <script src="js/vue.js"></script>
 
-    <!-- 生产环境版本，优化了尺寸和速度 -->
-    <!--<script src="https://cdn.jsdelivr.net/npm/vue"></script>-->
-    <!--<script src="js/vue.min.js"></script>-->
-
-    <!-- Axios -->
-    <!--<script src="https://unpkg.com/axios/dist/axios.min.js"></script>-->
+    <script src="js/vue.min.js"></script>
     <script src="js/axios.min.js"></script>
-
-    <!-- Element -->
-    <!-- 引入样式 -->
-    <!--<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">-->
     <link rel="stylesheet" href="lib/element-ui/index.css">
-    <!-- 引入组件库 -->
-    <!--<script src="https://unpkg.com/element-ui/lib/index.js"></script>-->
     <script src="lib/element-ui/index.js"></script>
     <style>
         * {
@@ -55,6 +41,15 @@
             justify-content: center;
             margin-top: 40px;
         }
+
+        .image-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: #c0c4cc;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -79,19 +74,22 @@
                         </el-form-item>
                     </el-form>
                     <el-button-group>
-                        <el-button plain @click="getDevice">刷新</el-button>
-                        <el-button plain @click="getScreen">截图</el-button>
-                        <el-button plain @click="screenClose">{{ showScreen ? "隐藏截图" : "显示截图" }}
+                        <el-button plain @click="getDevices">刷新</el-button>
+                        <el-button plain @click="screenshot">截图</el-button>
+                        <el-button plain @click="switchScreen">{{ showScreen ? "隐藏截图" : "显示截图" }}
                         </el-button>
                     </el-button-group>
                 </div>
                 <!-- 设备截图 -->
                 <el-image
-                        style="margin: 20px"
+                        style="width:100%;padding: 20px;box-sizing: border-box"
                         :src="screenLink"
                         alt="截图"
                         v-if="screenLink"
                         v-show="showScreen">
+                    <div slot="placeholder" class="image-loading" style="">
+                        正在截取设备屏幕&nbsp;&nbsp;<i class="el-icon-loading"></i>
+                    </div>
                 </el-image>
             </div>
         </el-tab-pane>
@@ -103,9 +101,9 @@
                 <div class="choice-funs">
                     <el-form ref="form" label-width="100px" label-position="left">
                         <el-form-item label="选择功能：">
-                            <el-select v-model="fun" placeholder="请选择功能:" @change="changeFuns">
+                            <el-select v-model="fun" placeholder="请选择功能:" @change="changeFunction">
                                 <el-option
-                                        v-for="item in FUNS"
+                                        v-for="item in FUNCTIONS"
                                         :key="item.function"
                                         :label="item.name"
                                         :value="item.function">
@@ -123,10 +121,10 @@
                 <!-- 功能参数 -->
                 <div id="args">
                     <el-form ref="args" label-position="left"
-                             v-if="argsItem.args && '{}' != JSON.stringify(argsItem.args)">
+                             v-if="argsItem.args && '{}' !== JSON.stringify(argsItem.args)">
                         <template v-for="(info,arg) in argsItem.args">
                             <!-- 多选框类型 -->
-                            <template v-if="info['type'] != undefined && info.type=='bool'">
+                            <template v-if="info['type'] !== undefined && info.type==='bool'">
                                 <el-checkbox v-model="kwargs[arg]">{{info.desc}}</el-checkbox>
                             </template>
                             <!-- 数字类型 -->
@@ -147,7 +145,7 @@
             </div>
             <!-- 执行任务 -->
             <div class="run">
-                <el-button type="success" @click="Run">执行任务</el-button>
+                <el-button type="success" @click="createTask">执行任务</el-button>
             </div>
         </el-tab-pane>
         <!-- 任务管理 -->
@@ -155,18 +153,18 @@
             <!-- 正在执行的任务 -->
             <ul class="active">
                 <el-table :data="actives" style="width: 100%">
-                    <el-table-column type="index" width="50">
-                    </el-table-column><!-- 序号 -->
-                    <el-table-column prop="device" label="设备">
-                    </el-table-column><!-- 设备 -->
-                    <el-table-column prop="fun" label="任务">
-                    </el-table-column><!-- 任务 -->
+                    <!-- 序号 -->
+                    <el-table-column type="index" width="50"></el-table-column>
+                    <!-- 设备 -->
+                    <el-table-column prop="device" label="设备"></el-table-column>
+                    <!-- 任务 -->
+                    <el-table-column prop="fun" label="任务"></el-table-column>
                     <el-table-column prop="status" label="状态">
                         <template slot-scope="scope">
                             <el-tag
                                     :type="scope.row.alive ? (scope.row.suspend ? 'danger' : 'success') : 'warning'"
-                                    disable-transitions>{{ scope.row.alive ? (scope.row.suspend ? '已暂停' : '运行中') : '已完成'
-                                }}
+                                    disable-transitions>
+                                {{ scope.row.alive ? (scope.row.suspend ? '已暂停' : '运行中') : '已完成' }}
                             </el-tag>
                         </template>
                     </el-table-column><!-- 状态 -->
@@ -206,7 +204,7 @@
             activeName: 'connect', // tab页
             showScreen: false, // 是否显示截图
             screenLink: undefined,// 截图图片url
-            FUNS: null, // 功能详情
+            FUNCTIONS: null, // 功能详情
             actives: [],// 活动的任务
             devices: [],// 设备列表
             device: null,// 选择的设备
@@ -218,25 +216,35 @@
                 desc: undefined
             },// 功能对象
             kwargs: {},// 用户输入的功能的参数
+            timer: undefined // 查询活动任务的轮询定时器
 
         },
         created() {
-            // 获取功能列表
-            this.get_funs();
             // 获取设备
-            this.getDevice();
-            // 设置获取执行任务定时器
-            this.getActive();
-            setInterval(() => {
-                console.log("定时获取运行的任务");
-                this.getActive();
-            }, 1000 * 30);
+            this.getDevices();
+            // 获取功能列表
+            this.getFunctions();
+            // 创建轮询查询活动的任务
+            this.createTimer()
         },
         methods: {
+            createTimer() {
+                // 存在定时器则重置
+                if (this.timer) {
+                    clearInterval(this.timer)
+                }
+                // 先执行一次
+                this.getActives();
+                // 创建定时器
+                this.timer = setInterval(() => {
+                    console.log("定时获取运行的任务");
+                    this.getActives();
+                }, 1000 * 30);
+            },
             // 返回设备
-            getDevice() {
+            getDevices() {
                 this.device = null;
-                axios.post('/device').then((response) => {
+                axios.get('/devices').then((response) => {
                     let data = response.data;
                     if (!response.code) {
                         this.devices = data.data.filter(item => item[1] === "device");
@@ -252,39 +260,41 @@
                 });
             },
             // 截图
-            getScreen() {
-                axios.post("/screen", {device: this.device}).then(response => {
-                    let data = response.data;
-                    if (!data.code) {
-                        this.showScreen = true;
-                        this.screenLink = data.data + '?t=' + new Date().getTime();
-                    }
-                });
+            screenshot() {
+                this.showScreen = true;
+                this.screenLink = `/screen/${this.device}?t=${new Date().getTime()}`;
             },
-            // 隐藏截图
-            screenClose() {
-                if (this.screenLink === undefined || this.screenLink === '') {
-                    console.log("截图不存在!");
-                    this.getScreen();
-                } else this.showScreen = !this.showScreen;
+            // 展开/隐藏 截图
+            switchScreen() {
+                // 隐藏截图
+                if (this.showScreen) {
+                    this.showScreen = false
+                } else {
+                    // 展开截图, 不存在发起截图
+                    if (this.screenLink === undefined || this.screenLink === '') {
+                        this.screenshot();
+                    } else {
+                        this.showScreen = true;
+                    }
+                }
+
             },
             // 获取功能列表
-            get_funs() {
-                axios.post("/fun").then(response => {
+            getFunctions() {
+                axios.get("/functions").then(response => {
                     let data = response.data;
                     if (!data.code) {
-                        this.FUNS = data.data;
-                        this.argsItem = this.FUNS[0];
-                        this.fun = this.FUNS[0].function;
+                        this.FUNCTIONS = data.data;
+                        this.argsItem = this.FUNCTIONS[0];
+                        this.fun = this.FUNCTIONS[0].function;
                         this.kwargs = {};
                     }
                 });
             },
             // 获取正在进行的任务
-            getActive() {
-                console.log('获取活动任务!');
-                let activeList = document.getElementsByClassName('active')[0];
-                axios.post("/active").then(response => {
+            getActives() {
+                console.log('获取正在执行的任务!');
+                axios.get("/actives").then(response => {
                     let data = response.data;
                     if (!data.code) {
                         this.actives = data.data;
@@ -292,10 +302,10 @@
                 })
             },
             // 切换功能
-            changeFuns(fun_active) {
+            changeFunction(fun_active) {
                 console.log("切换功能至: ", fun_active);
                 let self = this;
-                this.FUNS.forEach(item => {
+                this.FUNCTIONS.forEach(item => {
                     if (item.function === fun_active) {
                         this.kwargs = {};
                         // 解决当从有参数的功能切换至另一个有参数的功能是会丢失一个参数
@@ -306,8 +316,8 @@
                     }
                 });
             },
-            // 运行
-            Run() {
+            // 创建任务
+            createTask() {
                 // 获取选择的设备
                 let device = this.device;
                 // 获取选择的功能
@@ -320,11 +330,11 @@
                 }
                 let data = {device: device, fun: fun, kwargs: kwargs};
                 console.log(data);
-                axios.post("/run", data).then(response => {
+                axios.post("/create", data).then(response => {
                     let data = response.data;
                     if (!data.code) {
                         this.$message.success('任务以执行');
-                        this.getActive();
+                        this.createTimer();
                     } else if (data.code === 1001) {
                         this.$message.error(data.msg || data.message);
                     }
@@ -336,7 +346,7 @@
                     let data = response.data;
                     if (!data.code) {
                         this.$message.success('任务暂停成功');
-                        this.getActive()
+                        this.createTimer()
                     } else {
                         this.$message.error(data.msg || data.message);
                     }
@@ -348,7 +358,7 @@
                     let data = response.data;
                     if (!data.code) {
                         this.$message.success('任务唤醒成功');
-                        this.getActive()
+                        this.createTimer()
                     } else {
                         this.$message.error(data.msg || data.message);
                     }
@@ -360,7 +370,7 @@
                     let data = response.data;
                     if (!data.code) {
                         this.$message.success('任务已结束');
-                        this.getActive()
+                        this.createTimer()
                     } else {
                         this.$message.error(data.msg || data.message);
                     }

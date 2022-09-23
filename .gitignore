@@ -1,7 +1,7 @@
 # IDE目录
 .idea
 __pycache__
-webgui\.idea
+static\.idea
 # PyInstaller
 build
 dist
@@ -9,8 +9,7 @@ dist
 # 日志&截图
 log/*
 images/screen/*.png
-webgui/screen/
-webgui/css/.sass-cache/
+static/css/.sass-cache/
 # 测试
 tests/
 run.bat
