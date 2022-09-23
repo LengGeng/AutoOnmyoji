@@ -32,7 +32,11 @@ class BaseOnmyoji:
     # 初始化Logger
     def _init_log_(self):
         log_path = os.path.join(self.driver.log_dir, "script.log")
-        self.logger = LogUtils.LogUtils(__name__).add_file_handler(log_path, LogUtils.DEBUG).getLogger()
+        log_format = f"%(levelname)s %(asctime)s {self.driver.__class__.__name__}({self.driver.serial}) %(message)s"
+        self.logger = LogUtils.LogUtils(__name__, default_handler=False) \
+            .add_sh_handler(log_format=log_format) \
+            .add_file_handler(log_path, LogUtils.DEBUG) \
+            .getLogger()
         self.logger.info("*" * 15 + "Script Start" + "*" * 15)
 
     def _init_scope_(self):
