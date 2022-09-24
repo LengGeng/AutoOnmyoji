@@ -662,39 +662,47 @@ class Onmyoji(BaseOnmyoji):
                 self.auto.delay((0.8, 1.2))
                 self.driver.screenshot()
 
-            # 检测是否次数不足
-            if mode == "活动券模式":
-                # 检测购买活动券
-                if self.auto.match(module_images["雷神契印特惠礼.png"]):
-                    self.logger.info("活动券次数不足")
-                    # 点击战斗区域退出购买界面
-                    if self.auto.match_touch(module_images["战斗.png"]):
-                        self.logger.info("关闭购买页面")
-                        self.auto.delay((0.8, 1.2))
-                        self.driver.screenshot()
+            # 检测活动券是否次数不足,检测购买活动券
+            if self.auto.match(module_images["雷神契印特惠礼.png"]):
+                self.logger.info("活动券次数不足")
+                # 点击战斗区域退出购买界面
+                if self.auto.match_touch(module_images["战斗.png"]):
+                    self.logger.info("关闭购买页面")
+                    self.auto.delay((0.8, 1.2))
+                    self.driver.screenshot()
+                else:
+                    self.logger.info("无法退出活动券购买界面")
+                    return
+                # 切换到体力模式
+                toggles = self.auto.find_all(module_images["切换.png"])
+                if toggles:
+                    for toggle in toggles:
+                        # 点击屏幕右半边的切换
+                        if toggle.s.x >= (self.driver.width / 2):
+                            self.logger.info("切换到体力模式")
+                            self.auto.click(toggle)
+                            break
                     else:
-                        self.logger.info("无法退出活动券购买界面")
-                        return
-                    # 切换到体力模式
-                    toggles = self.auto.find_all(module_images["切换.png"])
-                    if toggles:
-                        for toggle in toggles:
-                            # 点击屏幕右半边的切换
-                            if toggle.s.x >= (self.driver.width / 2):
-                                self.logger.info("切换到体力模式")
-                                self.auto.click(toggle)
-                                break
-                        else:
-                            self.logger.info("无法切换体力模式")
-                        self.auto.delay((0.8, 1.2))
-                        self.driver.screenshot()
+                        self.logger.info("无法切换体力模式")
+                    self.auto.delay((0.8, 1.2))
+                    self.driver.screenshot()
 
-                    # 检测模式是否切换成功
-                    if self.auto.match(module_images["x6.png"]):
-                        mode = "体力模式"
-                    else:
-                        self.logger.warning("切换到体力模式失败,退出")
-                        return
+                # 检测模式是否切换成功
+                if self.auto.match(module_images["x6.png"]):
+                    mode = "体力模式"
+                else:
+                    self.logger.warning("切换到体力模式失败,退出")
+                    return
+
+            # 检测体力次数用完
+            auto_accuracy = self.auto.accuracy
+            self.auto.accuracy = .98
+            if self.auto.match(module_images["无挑战次数.png"]):
+                CVUtils.match_mark(self.driver.screen, module_images["无挑战次数.png"])
+                self.logger.info("挑战次数用尽!")
+                self.logger.info("退出")
+                return
+            self.auto.accuracy = auto_accuracy
 
             # 开始挑战
             if self.auto.match_touch(module_images["战斗.png"]):
