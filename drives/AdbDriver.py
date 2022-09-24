@@ -7,7 +7,7 @@ import adbutils
 
 from drives import Driver
 from settings import SCREEN_PATH
-from utils.PosUtils import Pos, Scope, AnyPos, AnyScope
+from utils.PosUtils import AnyPos, AnyScope, Scope, Pos
 
 BRANDS = ["MEIZU", "XIAOMI", "VIVO", "LG"]
 
@@ -63,7 +63,7 @@ class AdbDriver(Driver):
         screen_filename = f"{self._serial}.png"
         screen_filepath = os.path.normpath(os.path.join(SCREEN_PATH, screen_filename))
         screencap_cmd = f"adb -s {self._serial} shell screencap -p /sdcard/{screen_filename}"
-        pull_cmd = f"adb -s {self._serial} pull /sdcard/{screen_filename} {SCREEN_PATH}"
+        pull_cmd = f"adb -s {self._serial} pull /sdcard/{screen_filename} \"{SCREEN_PATH}\""
         # TODO 更换实现方式 Popen -> adbutils
         Popen(screencap_cmd + '&&' + pull_cmd, shell=True, stdout=PIPE, stderr=DEVNULL, bufsize=-1).wait()
         img_rgb = cv2.imread(screen_filepath)
@@ -87,8 +87,8 @@ class AdbDriver(Driver):
 if __name__ == '__main__':
     adb_drive = AdbDriver("emulator-5560")
     print(adb_drive.displays)
-    # cv2.imshow("Image", adb_drive.screen)
-    # cv2.waitKey(0)
+    cv2.imshow("Image", adb_drive.screen)
+    cv2.waitKey(0)
     for i in range(5):
-        # adb_drive.click(Pos(100, 100))
+        adb_drive.click(Pos(100, 100))
         adb_drive.swipe(Scope(Pos(100, 100), Pos(600, 100)), 10)
